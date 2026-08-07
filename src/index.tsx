@@ -281,20 +281,20 @@ document.addEventListener('click', function(e) {
   const status = btn.dataset.status
 
   try {
-    if (action === 'novo-clube') (window.modalNovoClube || modalNovoClube)()
-    else if (action === 'editar-clube') (window.modalEditarClube || modalEditarClube)(id)
-    else if (action === 'admin-clube') (window.modalAdminClube || modalAdminClube)(id)
-    else if (action === 'status-clube') (window.alterarStatusClube || alterarStatusClube)(id, status)
-    else if (action === 'novo-usuario-global') (window.modalNovoUsuarioGlobal || modalNovoUsuarioGlobal)()
-    else if (action === 'nova-classe') (window.modalNovaClasse || modalNovaClasse)()
-    else if (action === 'editar-classe') (window.modalEditarClasse || modalEditarClasse)(id)
-    else if (action === 'status-classe') (window.alterarStatusClasse || alterarStatusClasse)(id, status)
-    else if (action === 'novo-jogador') (window.modalNovoJogador || modalNovoJogador)()
-    else if (action === 'editar-jogador') (window.modalEditarJogador || modalEditarJogador)(id)
-    else if (action === 'status-jogador') (window.alterarStatusJogador || alterarStatusJogador)(id, status)
-    else if (action === 'novo-pagamento') (window.modalNovoPagamento || modalNovoPagamento)()
-    else if (action === 'gerar-mensalidades') (window.modalGerarMensalidades || modalGerarMensalidades)()
-    else if (action === 'marcar-pago') (window.marcarPago || marcarPago)(id)
+    if (action === 'novo-clube') modalNovoClube()
+    else if (action === 'editar-clube') modalEditarClube(id)
+    else if (action === 'admin-clube') modalAdminClube(id)
+    else if (action === 'status-clube') alterarStatusClube(id, status)
+    else if (action === 'novo-usuario-global') modalNovoUsuarioGlobal()
+    else if (action === 'nova-classe') modalNovaClasse()
+    else if (action === 'editar-classe') modalEditarClasse(id)
+    else if (action === 'status-classe') alterarStatusClasse(id, status)
+    else if (action === 'novo-jogador') modalNovoJogador()
+    else if (action === 'editar-jogador') modalEditarJogador(id)
+    else if (action === 'status-jogador') alterarStatusJogador(id, status)
+    else if (action === 'novo-pagamento') modalNovoPagamento()
+    else if (action === 'gerar-mensalidades') modalGerarMensalidades()
+    else if (action === 'marcar-pago') marcarPago(id)
   } catch (err) {
     console.error('Erro na ação:', action, err)
   }
@@ -582,6 +582,7 @@ function statCard(icon, label, value, color = 'green', sub = '') {
 // MODAL
 // ============================================================
 function showModal(title, bodyHtml, onConfirm, confirmLabel = 'Salvar', size = 'max-w-lg') {
+  closeModal()
   const modal = document.createElement('div')
   modal.id = 'modal-overlay'
   modal.className = 'fixed inset-0 modal-bg flex items-center justify-center z-50 p-4'
@@ -598,7 +599,13 @@ function showModal(title, bodyHtml, onConfirm, confirmLabel = 'Salvar', size = '
       </div>
     </div>
   \`
-  document.getElementById('modal-container').appendChild(modal)
+  let container = document.getElementById('modal-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'modal-container'
+    document.body.appendChild(container)
+  }
+  container.appendChild(modal)
   if (onConfirm) document.getElementById('modal-confirm').addEventListener('click', onConfirm)
   document.addEventListener('keydown', handleEsc)
 }
@@ -994,7 +1001,7 @@ function filtrarClubes(busca) {
   })
 }
 
-window.modalNovoClube = function() {
+function modalNovoClube() {
   showModal('Novo Clube', 
     formGroup('Nome do Clube', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Ex: Clube Atlético">', true) +
     '<div class="grid grid-cols-2 gap-3">' +
@@ -1018,9 +1025,10 @@ window.modalNovoClube = function() {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao criar clube', 'error'); }
     }
   );
-};
+}
+window.modalNovoClube = modalNovoClube;
 
-window.modalEditarClube = function(id) {
+function modalEditarClube(id) {
   var c = (State.data.clubesMap && State.data.clubesMap[id]) || {};
   showModal('Editar Clube', 
     formGroup('Nome do Clube', '<input type="text" id="f-nome" class="' + inputClass() + '" value="' + (c.nome || '').replace(/"/g, '&quot;') + '">', true) +
@@ -1043,9 +1051,10 @@ window.modalEditarClube = function(id) {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao atualizar', 'error'); }
     }
   );
-};
+}
+window.modalEditarClube = modalEditarClube;
 
-window.modalAdminClube = function(clube_id) {
+function modalAdminClube(clube_id) {
   var c = (State.data.clubesMap && State.data.clubesMap[clube_id]) || {};
   var clube_nome = c.nome || '';
   showModal('Adicionar Administrador — ' + clube_nome, 
@@ -1063,9 +1072,10 @@ window.modalAdminClube = function(clube_id) {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao vincular admin', 'error'); }
     }
   );
-};
+}
+window.modalAdminClube = modalAdminClube;
 
-window.alterarStatusClube = async function(id, statusAtual) {
+async function alterarStatusClube(id, statusAtual) {
   const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO';
   const msg = statusAtual === 'ATIVO' 
     ? 'Tem certeza que deseja <strong>inativar</strong> este clube? Todos os usuários do clube perderão acesso.'
@@ -1076,7 +1086,8 @@ window.alterarStatusClube = async function(id, statusAtual) {
       closeModal(); toast('Status do clube atualizado!'); renderClubes();
     } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
   });
-};
+}
+window.alterarStatusClube = alterarStatusClube;
 
 // ============================================================
 // USUÁRIOS (ADMIN GLOBAL)
@@ -1138,7 +1149,7 @@ async function renderUsuarios() {
   \`)
 }
 
-window.modalNovoUsuarioGlobal = async function() {
+async function modalNovoUsuarioGlobal() {
   try {
     const clubesRes = await api.get('/admin/global/clubes?limit=100')
     const clubes = clubesRes.data.data.items || []
@@ -1182,6 +1193,7 @@ window.modalNovoUsuarioGlobal = async function() {
     toast('Erro ao carregar lista de clubes', 'error')
   }
 }
+window.modalNovoUsuarioGlobal = modalNovoUsuarioGlobal;
 
 // ============================================================
 // AUDITORIA (ADMIN GLOBAL)
@@ -1357,7 +1369,7 @@ async function renderClasses() {
   \`)
 }
 
-window.modalNovaClasse = function() {
+function modalNovaClasse() {
   showModal('Nova Classe', 
     formGroup('Nome da Classe', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Ex: Classe A, Iniciante, Avançado">', true) +
     formGroup('Descrição', '<textarea id="f-desc" class="' + inputClass() + '" rows="2" placeholder="Descrição opcional"></textarea>') +
@@ -1373,9 +1385,10 @@ window.modalNovaClasse = function() {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao criar classe', 'error'); }
     }
   );
-};
+}
+window.modalNovaClasse = modalNovaClasse;
 
-window.modalEditarClasse = function(id) {
+function modalEditarClasse(id) {
   var cl = (State.data.classesMap && State.data.classesMap[id]) || {};
   showModal('Editar Classe', 
     formGroup('Nome', '<input type="text" id="f-nome" class="' + inputClass() + '" value="' + (cl.nome || '').replace(/"/g, '&quot;') + '">', true) +
@@ -1392,15 +1405,17 @@ window.modalEditarClasse = function(id) {
       } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
     }
   );
-};
+}
+window.modalEditarClasse = modalEditarClasse;
 
-window.alterarStatusClasse = async function(id, statusAtual) {
+async function alterarStatusClasse(id, statusAtual) {
   const novoStatus = statusAtual === 'ATIVA' ? 'INATIVA' : 'ATIVA';
   try {
     await api.patch('/admin/clube/classes/' + id + '/status', { status: novoStatus });
     toast('Status da classe atualizado!'); renderClasses();
   } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
-};
+}
+window.alterarStatusClasse = alterarStatusClasse;
 
 // ============================================================
 // JOGADORES
@@ -1510,7 +1525,7 @@ function filtrarJogadoresPorClasse(classeId) {
   filtrarJogadores(busca)
 }
 
-window.modalNovoJogador = function() {
+function modalNovoJogador() {
   var classes = State.data.classes || [];
   var options = '<option value="">Selecione a classe</option>' + classes.map(function(cl) {
     return '<option value="' + cl.id + '">' + cl.nome + '</option>';
@@ -1536,9 +1551,10 @@ window.modalNovoJogador = function() {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao criar jogador', 'error'); }
     }
   );
-};
+}
+window.modalNovoJogador = modalNovoJogador;
 
-window.modalEditarJogador = function(id) {
+function modalEditarJogador(id) {
   var j = (State.data.jogadoresMap && State.data.jogadoresMap[id]) || {};
   var classes = State.data.classes || [];
   var options = classes.map(function(cl) {
@@ -1562,15 +1578,17 @@ window.modalEditarJogador = function(id) {
       } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
     }
   );
-};
+}
+window.modalEditarJogador = modalEditarJogador;
 
-window.alterarStatusJogador = async function(id, statusAtual) {
+async function alterarStatusJogador(id, statusAtual) {
   const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO';
   try {
     await api.patch('/admin/clube/jogadores/' + id + '/status', { status: novoStatus });
     toast('Status do jogador atualizado!'); renderJogadores();
   } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
-};
+}
+window.alterarStatusJogador = alterarStatusJogador;
 
 // ============================================================
 // PAGAMENTOS (ADMIN CLUBE)
@@ -1699,7 +1717,7 @@ async function renderPagamentos() {
     await renderPagamentos()
   }
 
-  window.marcarPago = async (id) => {
+  async function marcarPago(id) {
     try {
       const mesAtual = new Date().toISOString().split('T')[0]
       await api.patch(\`/api/admin/clube/pagamentos/\${id}\`, { status: 'PAGO', data_pagamento: mesAtual, metodo_pagamento: 'PIX' })
@@ -1707,8 +1725,9 @@ async function renderPagamentos() {
       renderPagamentos()
     } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
   }
+  window.marcarPago = marcarPago
 
-  window.modalNovoPagamento = () => {
+  function modalNovoPagamento() {
     const jogadores = State.data.pgmtJogadores || []
     const config = State.data.pgmtConfig || {}
     const mesAtual = new Date().toISOString().slice(0,7)
@@ -1760,8 +1779,9 @@ async function renderPagamentos() {
       } catch(e) { toast(e.response?.data?.error || 'Erro ao registrar', 'error') }
     }, 'Registrar')
   }
+  window.modalNovoPagamento = modalNovoPagamento
 
-  window.modalGerarMensalidades = () => {
+  function modalGerarMensalidades() {
     const jogadores = State.data.pgmtJogadores || []
     const config = State.data.pgmtConfig || {}
     const mesAtual = new Date().toISOString().slice(0,7)
