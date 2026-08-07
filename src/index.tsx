@@ -966,84 +966,89 @@ function filtrarClubes(busca) {
   })
 }
 
-function modalNovoClube() {
-  showModal('Novo Clube', \`
-    \${formGroup('Nome do Clube', \`<input type="text" id="f-nome" class="\${inputClass()}" placeholder="Ex: Clube Atlético">\`, true)}
-    <div class="grid grid-cols-2 gap-3">
-      \${formGroup('Cidade', \`<input type="text" id="f-cidade" class="\${inputClass()}" placeholder="São Paulo">\`)}
-      \${formGroup('Estado', \`<input type="text" id="f-estado" class="\${inputClass()}" placeholder="SP" maxlength="2">\`)}
-    </div>
-    \${formGroup('Email de Contato', \`<input type="email" id="f-email" class="\${inputClass()}" placeholder="contato@clube.com">\`)}
-    \${formGroup('Telefone', \`<input type="tel" id="f-telefone" class="\${inputClass()}" placeholder="(11) 9999-9999">\`)}
-  \`, async () => {
-    try {
-      await api.post('/admin/global/clubes', {
-        nome: document.getElementById('f-nome').value,
-        cidade: document.getElementById('f-cidade').value,
-        estado: document.getElementById('f-estado').value,
-        email_contato: document.getElementById('f-email').value,
-        telefone: document.getElementById('f-telefone').value
-      })
-      closeModal()
-      toast('Clube criado com sucesso!')
-      renderClubes()
-    } catch(e) { toast(e.response?.data?.error || 'Erro ao criar clube', 'error') }
-  })
-}
+window.modalNovoClube = function() {
+  showModal('Novo Clube', 
+    formGroup('Nome do Clube', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Ex: Clube Atlético">', true) +
+    '<div class="grid grid-cols-2 gap-3">' +
+      formGroup('Cidade', '<input type="text" id="f-cidade" class="' + inputClass() + '" placeholder="São Paulo">') +
+      formGroup('Estado', '<input type="text" id="f-estado" class="' + inputClass() + '" placeholder="SP" maxlength="2">') +
+    '</div>' +
+    formGroup('Email de Contato', '<input type="email" id="f-email" class="' + inputClass() + '" placeholder="contato@clube.com">') +
+    formGroup('Telefone', '<input type="tel" id="f-telefone" class="' + inputClass() + '" placeholder="(11) 9999-9999">'),
+    async function() {
+      try {
+        await api.post('/admin/global/clubes', {
+          nome: document.getElementById('f-nome').value,
+          cidade: document.getElementById('f-cidade').value,
+          estado: document.getElementById('f-estado').value,
+          email_contato: document.getElementById('f-email').value,
+          telefone: document.getElementById('f-telefone').value
+        });
+        closeModal();
+        toast('Clube criado com sucesso!');
+        renderClubes();
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar clube', 'error'); }
+    }
+  );
+};
 
-function modalEditarClube(id) {
-  const c = State.data.clubesMap?.[id] || {}
-  showModal('Editar Clube', \`
-    \${formGroup('Nome do Clube', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${c.nome || ''}">\`, true)}
-    <div class="grid grid-cols-2 gap-3">
-      \${formGroup('Cidade', \`<input type="text" id="f-cidade" class="\${inputClass()}" value="\${c.cidade || ''}">\`)}
-      \${formGroup('Estado', \`<input type="text" id="f-estado" class="\${inputClass()}" value="\${c.estado || ''}" maxlength="2">\`)}
-    </div>
-    \${formGroup('Email de Contato', \`<input type="email" id="f-email" class="\${inputClass()}" value="\${c.email_contato || ''}">\`)}
-    \${formGroup('Telefone', \`<input type="tel" id="f-telefone" class="\${inputClass()}" value="\${c.telefone || ''}">\`)}
-  \`, async () => {
-    try {
-      await api.put('/admin/global/clubes/' + id, {
-        nome: document.getElementById('f-nome').value,
-        cidade: document.getElementById('f-cidade').value,
-        estado: document.getElementById('f-estado').value,
-        email_contato: document.getElementById('f-email').value,
-        telefone: document.getElementById('f-telefone').value
-      })
-      closeModal(); toast('Clube atualizado!'); renderClubes()
-    } catch(e) { toast(e.response?.data?.error || 'Erro ao atualizar', 'error') }
-  })
-}
+window.modalEditarClube = function(id) {
+  var c = (State.data.clubesMap && State.data.clubesMap[id]) || {};
+  showModal('Editar Clube', 
+    formGroup('Nome do Clube', '<input type="text" id="f-nome" class="' + inputClass() + '" value="' + (c.nome || '').replace(/"/g, '&quot;') + '">', true) +
+    '<div class="grid grid-cols-2 gap-3">' +
+      formGroup('Cidade', '<input type="text" id="f-cidade" class="' + inputClass() + '" value="' + (c.cidade || '').replace(/"/g, '&quot;') + '">') +
+      formGroup('Estado', '<input type="text" id="f-estado" class="' + inputClass() + '" value="' + (c.estado || '').replace(/"/g, '&quot;') + '" maxlength="2">') +
+    '</div>' +
+    formGroup('Email de Contato', '<input type="email" id="f-email" class="' + inputClass() + '" value="' + (c.email_contato || '').replace(/"/g, '&quot;') + '">') +
+    formGroup('Telefone', '<input type="tel" id="f-telefone" class="' + inputClass() + '" value="' + (c.telefone || '').replace(/"/g, '&quot;') + '">'),
+    async function() {
+      try {
+        await api.put('/admin/global/clubes/' + id, {
+          nome: document.getElementById('f-nome').value,
+          cidade: document.getElementById('f-cidade').value,
+          estado: document.getElementById('f-estado').value,
+          email_contato: document.getElementById('f-email').value,
+          telefone: document.getElementById('f-telefone').value
+        });
+        closeModal(); toast('Clube atualizado!'); renderClubes();
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao atualizar', 'error'); }
+    }
+  );
+};
 
-function modalAdminClube(clube_id, clube_nome) {
-  showModal('Adicionar Administrador — ' + clube_nome, \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" placeholder="Nome completo">\`, true)}
-    \${formGroup('Email', \`<input type="email" id="f-email" class="\${inputClass()}" placeholder="admin@clube.com">\`, true)}
-    \${formGroup('Senha', \`<input type="password" id="f-senha" class="\${inputClass()}" placeholder="Mínimo 6 caracteres">\`, true)}
-  \`, async () => {
-    try {
-      await api.post('/admin/global/clubes/' + clube_id + '/administradores', {
-        nome: document.getElementById('f-nome').value,
-        email: document.getElementById('f-email').value,
-        senha: document.getElementById('f-senha').value
-      })
-      closeModal(); toast('Administrador vinculado ao clube!')
-    } catch(e) { toast(e.response?.data?.error || 'Erro ao vincular admin', 'error') }
-  })
-}
+window.modalAdminClube = function(clube_id) {
+  var c = (State.data.clubesMap && State.data.clubesMap[clube_id]) || {};
+  var clube_nome = c.nome || '';
+  showModal('Adicionar Administrador — ' + clube_nome, 
+    formGroup('Nome', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Nome completo">', true) +
+    formGroup('Email', '<input type="email" id="f-email" class="' + inputClass() + '" placeholder="admin@clube.com">', true) +
+    formGroup('Senha', '<input type="password" id="f-senha" class="' + inputClass() + '" placeholder="Mínimo 6 caracteres">', true),
+    async function() {
+      try {
+        await api.post('/admin/global/clubes/' + clube_id + '/administradores', {
+          nome: document.getElementById('f-nome').value,
+          email: document.getElementById('f-email').value,
+          senha: document.getElementById('f-senha').value
+        });
+        closeModal(); toast('Administrador vinculado ao clube!');
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao vincular admin', 'error'); }
+    }
+  );
+};
 
-async function alterarStatusClube(id, statusAtual) {
-  const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO'
+window.alterarStatusClube = async function(id, statusAtual) {
+  const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO';
   const msg = statusAtual === 'ATIVO' 
     ? 'Tem certeza que deseja <strong>inativar</strong> este clube? Todos os usuários do clube perderão acesso.'
-    : 'Deseja <strong>reativar</strong> este clube?'
+    : 'Deseja <strong>reativar</strong> este clube?';
   confirmDelete(msg, async () => {
     try {
-      await api.patch('/admin/global/clubes/' + id + '/status', { status: novoStatus })
-      closeModal(); toast('Status do clube atualizado!'); renderClubes()
-    } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
-  })
-}
+      await api.patch('/admin/global/clubes/' + id + '/status', { status: novoStatus });
+      closeModal(); toast('Status do clube atualizado!'); renderClubes();
+    } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
+  });
+};
 
 // ============================================================
 // USUÁRIOS (ADMIN GLOBAL)
@@ -1324,48 +1329,50 @@ async function renderClasses() {
   \`)
 }
 
-function modalNovaClasse() {
-  showModal('Nova Classe', \`
-    \${formGroup('Nome da Classe', \`<input type="text" id="f-nome" class="\${inputClass()}" placeholder="Ex: Classe A, Iniciante, Avançado">\`, true)}
-    \${formGroup('Descrição', \`<textarea id="f-desc" class="\${inputClass()}" rows="2" placeholder="Descrição opcional"></textarea>\`)}
-    \${formGroup('Ordem de exibição', \`<input type="number" id="f-ordem" class="\${inputClass()}" value="0" min="0">\`)}
-  \`, async () => {
-    try {
-      await api.post('/admin/clube/classes', {
-        nome: document.getElementById('f-nome').value,
-        descricao: document.getElementById('f-desc').value,
-        ordem: parseInt(document.getElementById('f-ordem').value) || 0
-      })
-      closeModal(); toast('Classe criada!'); renderClasses()
-    } catch(e) { toast(e.response?.data?.error || 'Erro ao criar classe', 'error') }
-  })
-}
+window.modalNovaClasse = function() {
+  showModal('Nova Classe', 
+    formGroup('Nome da Classe', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Ex: Classe A, Iniciante, Avançado">', true) +
+    formGroup('Descrição', '<textarea id="f-desc" class="' + inputClass() + '" rows="2" placeholder="Descrição opcional"></textarea>') +
+    formGroup('Ordem de exibição', '<input type="number" id="f-ordem" class="' + inputClass() + '" value="0" min="0">'),
+    async function() {
+      try {
+        await api.post('/admin/clube/classes', {
+          nome: document.getElementById('f-nome').value,
+          descricao: document.getElementById('f-desc').value,
+          ordem: parseInt(document.getElementById('f-ordem').value) || 0
+        });
+        closeModal(); toast('Classe criada!'); renderClasses();
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar classe', 'error'); }
+    }
+  );
+};
 
-function modalEditarClasse(id) {
-  const cl = State.data.classesMap?.[id] || {}
-  showModal('Editar Classe', \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${cl.nome || ''}">\`, true)}
-    \${formGroup('Descrição', \`<textarea id="f-desc" class="\${inputClass()}" rows="2">\${cl.descricao || ''}</textarea>\`)}
-    \${formGroup('Ordem', \`<input type="number" id="f-ordem" class="\${inputClass()}" value="\${cl.ordem || 0}" min="0">\`)}
-  \`, async () => {
-    try {
-      await api.put('/admin/clube/classes/' + id, {
-        nome: document.getElementById('f-nome').value,
-        descricao: document.getElementById('f-desc').value,
-        ordem: parseInt(document.getElementById('f-ordem').value) || 0
-      })
-      closeModal(); toast('Classe atualizada!'); renderClasses()
-    } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
-  })
-}
+window.modalEditarClasse = function(id) {
+  var cl = (State.data.classesMap && State.data.classesMap[id]) || {};
+  showModal('Editar Classe', 
+    formGroup('Nome', '<input type="text" id="f-nome" class="' + inputClass() + '" value="' + (cl.nome || '').replace(/"/g, '&quot;') + '">', true) +
+    formGroup('Descrição', '<textarea id="f-desc" class="' + inputClass() + '" rows="2">' + (cl.descricao || '').replace(/</g, '&lt;') + '</textarea>') +
+    formGroup('Ordem', '<input type="number" id="f-ordem" class="' + inputClass() + '" value="' + (cl.ordem || 0) + '" min="0">'),
+    async function() {
+      try {
+        await api.put('/admin/clube/classes/' + id, {
+          nome: document.getElementById('f-nome').value,
+          descricao: document.getElementById('f-desc').value,
+          ordem: parseInt(document.getElementById('f-ordem').value) || 0
+        });
+        closeModal(); toast('Classe atualizada!'); renderClasses();
+      } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
+    }
+  );
+};
 
-async function alterarStatusClasse(id, statusAtual) {
-  const novoStatus = statusAtual === 'ATIVA' ? 'INATIVA' : 'ATIVA'
+window.alterarStatusClasse = async function(id, statusAtual) {
+  const novoStatus = statusAtual === 'ATIVA' ? 'INATIVA' : 'ATIVA';
   try {
-    await api.patch('/admin/clube/classes/' + id + '/status', { status: novoStatus })
-    toast('Status da classe atualizado!'); renderClasses()
-  } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
-}
+    await api.patch('/admin/clube/classes/' + id + '/status', { status: novoStatus });
+    toast('Status da classe atualizado!'); renderClasses();
+  } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
+};
 
 // ============================================================
 // JOGADORES
@@ -1475,65 +1482,67 @@ function filtrarJogadoresPorClasse(classeId) {
   filtrarJogadores(busca)
 }
 
-function modalNovoJogador() {
-  const classes = State.data.classes || []
-  showModal('Novo Jogador', \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" placeholder="Nome completo do jogador">\`, true)}
-    \${formGroup('Classe', \`
-      <select id="f-classe" class="\${selectClass()}">
-        <option value="">Selecione a classe</option>
-        \${classes.map(cl => \`<option value="\${cl.id}">\${cl.nome}</option>\`).join('')}
-      </select>
-    \`, true)}
-    \${formGroup('Email', \`<input type="email" id="f-email" class="\${inputClass()}" placeholder="email@exemplo.com">\`)}
-    \${formGroup('Telefone', \`<input type="tel" id="f-telefone" class="\${inputClass()}" placeholder="(11) 9999-9999">\`)}
-  \`, async () => {
-    const nome = document.getElementById('f-nome').value
-    const classe_id = document.getElementById('f-classe').value
-    if (!nome || !classe_id) { toast('Nome e classe são obrigatórios', 'error'); return }
-    try {
-      await api.post('/admin/clube/jogadores', {
-        nome, classe_id,
-        email: document.getElementById('f-email').value,
-        telefone: document.getElementById('f-telefone').value
-      })
-      closeModal(); toast('Jogador cadastrado!'); renderJogadores()
-    } catch(e) { toast(e.response?.data?.error || 'Erro ao criar jogador', 'error') }
-  })
-}
+window.modalNovoJogador = function() {
+  var classes = State.data.classes || [];
+  var options = '<option value="">Selecione a classe</option>' + classes.map(function(cl) {
+    return '<option value="' + cl.id + '">' + cl.nome + '</option>';
+  }).join('');
+  
+  showModal('Novo Jogador', 
+    formGroup('Nome', '<input type="text" id="f-nome" class="' + inputClass() + '" placeholder="Nome completo do jogador">', true) +
+    formGroup('Classe', '<select id="f-classe" class="' + selectClass() + '">' + options + '</select>', true) +
+    formGroup('Email', '<input type="email" id="f-email" class="' + inputClass() + '" placeholder="email@exemplo.com">') +
+    formGroup('Telefone', '<input type="tel" id="f-telefone" class="' + inputClass() + '" placeholder="(11) 9999-9999">'),
+    async function() {
+      var nome = document.getElementById('f-nome').value;
+      var classe_id = document.getElementById('f-classe').value;
+      if (!nome || !classe_id) { toast('Nome e classe são obrigatórios', 'error'); return; }
+      try {
+        await api.post('/admin/clube/jogadores', {
+          nome: nome,
+          classe_id: classe_id,
+          email: document.getElementById('f-email').value,
+          telefone: document.getElementById('f-telefone').value
+        });
+        closeModal(); toast('Jogador cadastrado!'); renderJogadores();
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar jogador', 'error'); }
+    }
+  );
+};
 
-function modalEditarJogador(id) {
-  const j = State.data.jogadoresMap?.[id] || {}
-  const classes = State.data.classes || []
-  showModal('Editar Jogador', \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${j.nome || ''}">\`, true)}
-    \${formGroup('Classe', \`
-      <select id="f-classe" class="\${selectClass()}">
-        \${classes.map(cl => \`<option value="\${cl.id}" \${cl.id === j.classe_id ? 'selected' : ''}>\${cl.nome}</option>\`).join('')}
-      </select>
-    \`, true)}
-    \${formGroup('Email', \`<input type="email" id="f-email" class="\${inputClass()}" value="\${j.email || ''}">\`)}
-    \${formGroup('Telefone', \`<input type="tel" id="f-telefone" class="\${inputClass()}" value="\${j.telefone || ''}">\`)}
-  \`, async () => {
-    try {
-      await api.put('/admin/clube/jogadores/' + id, {
-        nome: document.getElementById('f-nome').value,
-        classe_id: document.getElementById('f-classe').value,
-        email: document.getElementById('f-email').value,
-        telefone: document.getElementById('f-telefone').value
-      })
-      closeModal(); toast('Jogador atualizado!'); renderJogadores()
-    } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
-  })
-}
+window.modalEditarJogador = function(id) {
+  var j = (State.data.jogadoresMap && State.data.jogadoresMap[id]) || {};
+  var classes = State.data.classes || [];
+  var options = classes.map(function(cl) {
+    return '<option value="' + cl.id + '" ' + (cl.id === j.classe_id ? 'selected' : '') + '>' + cl.nome + '</option>';
+  }).join('');
 
-async function alterarStatusJogador(id, statusAtual) {
-  const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO'
+  showModal('Editar Jogador', 
+    formGroup('Nome', '<input type="text" id="f-nome" class="' + inputClass() + '" value="' + (j.nome || '').replace(/"/g, '&quot;') + '">', true) +
+    formGroup('Classe', '<select id="f-classe" class="' + selectClass() + '">' + options + '</select>', true) +
+    formGroup('Email', '<input type="email" id="f-email" class="' + inputClass() + '" value="' + (j.email || '').replace(/"/g, '&quot;') + '">') +
+    formGroup('Telefone', '<input type="tel" id="f-telefone" class="' + inputClass() + '" value="' + (j.telefone || '').replace(/"/g, '&quot;') + '">'),
+    async function() {
+      try {
+        await api.put('/admin/clube/jogadores/' + id, {
+          nome: document.getElementById('f-nome').value,
+          classe_id: document.getElementById('f-classe').value,
+          email: document.getElementById('f-email').value,
+          telefone: document.getElementById('f-telefone').value
+        });
+        closeModal(); toast('Jogador atualizado!'); renderJogadores();
+      } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
+    }
+  );
+};
+
+window.alterarStatusJogador = async function(id, statusAtual) {
+  const novoStatus = statusAtual === 'ATIVO' ? 'INATIVO' : 'ATIVO';
   try {
-    await api.patch('/admin/clube/jogadores/' + id + '/status', { status: novoStatus })
-    toast('Status do jogador atualizado!'); renderJogadores()
-  } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
-}
+    await api.patch('/admin/clube/jogadores/' + id + '/status', { status: novoStatus });
+    toast('Status do jogador atualizado!'); renderJogadores();
+  } catch(e) { toast(e.response?.data?.error || 'Erro', 'error'); }
+};
 
 // ============================================================
 // PAGAMENTOS (ADMIN CLUBE)
