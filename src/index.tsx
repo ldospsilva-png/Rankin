@@ -58,14 +58,11 @@ app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISO
 app.get('/api/setup', async (c) => {
   try {
     const db = c.env.DB
-    
-    // Verificar se admin já existe
     const admin = await db.prepare(`SELECT id FROM usuarios WHERE perfil = 'ADMIN_GLOBAL' LIMIT 1`).first()
     if (admin) {
       return c.json({ message: 'Sistema já configurado', setup_needed: false })
     }
     
-    // Criar admin padrão
     const { hashPassword } = await import('./middleware/auth')
     const { generateId } = await import('./utils')
     
@@ -78,6 +75,207 @@ app.get('/api/setup', async (c) => {
     `).bind(id, senhaHash).run()
     
     return c.json({ message: 'Admin criado com sucesso', email: 'admin@tenis.com', senha: 'Admin@2025!', setup_needed: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// Gerar Dados de Teste Completos
+app.get('/api/seed', async (c) => {
+  try {
+    const db = c.env.DB
+    const { hashPassword } = await import('./middleware/auth')
+    const { generateId } = await import('./utils')
+
+    const senhaAdmin = await hashPassword('Admin@2025!')
+    const senhaJogador = await hashPassword('Jogador@2025!')
+
+    // 1. Admin Global
+    let admin = await db.prepare(`SELECT id FROM usuarios WHERE email = 'admin@tenis.com'`).first()
+    let adminGlobalId = admin?.id as string
+    if (!adminGlobalId) {
+      adminGlobalId = generateId()
+      await db.prepare(`
+        INSERT INTO usuarios (id, nome, email, senha_hash, status, perfil)
+        VALUES (?, 'Administrador Global', 'admin@tenis.com', ?, 'ATIVO', 'ADMIN_GLOBAL')
+      `).bind(adminGlobalId, senhaAdmin).run()
+    }
+
+    // 2. Clube 1 - Paulistano
+    let clube1 = await db.prepare(`SELECT id FROM clubes WHERE nome = 'Clube Paulistano de Tênis'`).first()
+    let clube1Id = clube1?.id as string
+    if (!clube1Id) {
+      clube1Id = generateId()
+      await db.prepare(`
+        INSERT INTO clubes (id, nome, cidade, estado, telefone, email_contato, status)
+        VALUES (?, 'Clube Paulistano de Tênis', 'São Paulo', 'SP', '(11) 98888-7777', 'contato@paulistanotenis.com.br', 'ATIVO')
+      `).bind(clube1Id).run()
+    }
+
+    // Admin do Clube 1
+    let adminClube1 = await db.prepare(`SELECT id FROM usuarios WHERE email = 'admin.sp@tenis.com'`).first()
+    let adminClube1Id = adminClube1?.id as string
+    if (!adminClube1Id) {
+      adminClube1Id = generateId()
+      await db.prepare(`
+        INSERT INTO usuarios (id, nome, email, senha_hash, status, perfil, clube_id)
+        VALUES (?, 'Admin Paulistano', 'admin.sp@tenis.com', ?, 'ATIVO', 'ADMIN_CLUBE', ?)
+      `).bind(adminClube1Id, senhaAdmin, clube1Id).run()
+    }
+
+    // Configurações do Clube 1
+    await db.prepare(`
+      INSERT OR REPLACE INTO configuracoes_clube 
+      (id, clube_id, periodicidade_sorteio, limite_jogos_aberto_por_jogador, permitir_wo, dias_para_wo, pontos_vitoria, pontos_derrota, pontos_wo, valor_mensalidade, pix_chave, pix_titular)
+      VALUES (?, ?, 7, 3, 1, 14, 3, 1, 0, 150.00, 'contato@paulistanotenis.com.br', 'Clube Paulistano de Tênis')
+    `).bind(generateId(), clube1Id).run()
+
+    // 3. Classes no Clube 1
+    const classesNomes = ['1ª Classe Masculina', '2ª Classe Masculina', 'Feminino Open']
+    const classesIds: Record<string, string> = {}
+
+    for (let i = 0; i < classesNomes.length; i++) {
+      const cNome = classesNomes[i]
+      let cl = await db.prepare(`SELECT id FROM classes WHERE clube_id = ? AND nome = ?`).bind(clube1Id, cNome).first()
+      let clId = cl?.id as string
+      if (!clId) {
+        clId = generateId()
+        await db.prepare(`
+          INSERT INTO classes (id, clube_id, nome, descricao, ordem, status)
+          VALUES (?, ?, ?, ?, ?, 'ATIVA')
+        `).bind(clId, clube1Id, cNome, `Categoria ${cNome} do Ranking`, i + 1).run()
+      }
+      classesIds[cNome] = clId
+    }
+
+    // 4. Jogadores e seus Usuários
+    const listaJogadores = [
+      { nome: 'Carlos Silva', email: 'carlos.silva@email.com', fone: '(11) 91111-1001', classe: '1ª Classe Masculina', pts: 12, pos: 1 },
+      { nome: 'Marcelo Oliveira', email: 'marcelo.oliveira@email.com', fone: '(11) 91111-1002', classe: '1ª Classe Masculina', pts: 9, pos: 2 },
+      { nome: 'Rodrigo Santos', email: 'rodrigo.santos@email.com', fone: '(11) 91111-1003', classe: '1ª Classe Masculina', pts: 6, pos: 3 },
+      { nome: 'Bruno Lima', email: 'bruno.lima@email.com', fone: '(11) 91111-1004', classe: '1ª Classe Masculina', pts: 3, pos: 4 },
+      { nome: 'Lucas Costa', email: 'lucas.costa@email.com', fone: '(11) 91111-1005', classe: '2ª Classe Masculina', pts: 15, pos: 1 },
+      { nome: 'Marcos Pereira', email: 'marcos.pereira@email.com', fone: '(11) 91111-1006', classe: '2ª Classe Masculina', pts: 10, pos: 2 },
+      { nome: 'Rafael Ferreira', email: 'rafael.ferreira@email.com', fone: '(11) 91111-1007', classe: '2ª Classe Masculina', pts: 7, pos: 3 },
+      { nome: 'Fernanda Almeida', email: 'fernanda.almeida@email.com', fone: '(11) 91111-1008', classe: 'Feminino Open', pts: 18, pos: 1 },
+      { nome: 'Patricia Gomes', email: 'patricia.gomes@email.com', fone: '(11) 91111-1009', classe: 'Feminino Open', pts: 12, pos: 2 },
+      { nome: 'Juliana Moraes', email: 'juliana.moraes@email.com', fone: '(11) 91111-1010', classe: 'Feminino Open', pts: 8, pos: 3 }
+    ]
+
+    const jogadoresCriados: Array<{ id: string; nome: string; classeId: string }> = []
+
+    for (const jData of listaJogadores) {
+      let u = await db.prepare(`SELECT id FROM usuarios WHERE email = ?`).bind(jData.email).first()
+      let uId = u?.id as string
+      if (!uId) {
+        uId = generateId()
+        await db.prepare(`
+          INSERT INTO usuarios (id, nome, email, senha_hash, status, perfil, clube_id)
+          VALUES (?, ?, ?, ?, 'ATIVO', 'JOGADOR', ?)
+        `).bind(uId, jData.nome, jData.email, senhaJogador, clube1Id).run()
+      }
+
+      const classeId = classesIds[jData.classe]
+      let j = await db.prepare(`SELECT id FROM jogadores WHERE clube_id = ? AND email = ?`).bind(clube1Id, jData.email).first()
+      let jId = j?.id as string
+      if (!jId) {
+        jId = generateId()
+        await db.prepare(`
+          INSERT INTO jogadores (id, clube_id, classe_id, usuario_id, nome, email, telefone, pontos_total, ranking_posicao, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'ATIVO')
+        `).bind(jId, clube1Id, classeId, uId, jData.nome, jData.email, jData.fone, jData.pts, jData.pos).run()
+      }
+      jogadoresCriados.push({ id: jId, nome: jData.nome, classeId })
+    }
+
+    // 5. Rodada #1 (Finalizada) e Partidas
+    const c1Id = classesIds['1ª Classe Masculina']
+    let rodada1 = await db.prepare(`SELECT id FROM rodadas WHERE clube_id = ? AND numero = 1`).bind(clube1Id).first()
+    let rodada1Id = rodada1?.id as string
+    if (!rodada1Id) {
+      rodada1Id = generateId()
+      await db.prepare(`
+        INSERT INTO rodadas (id, clube_id, classe_id, numero, executado_por_usuario_id, status, total_partidas, total_jogadores_elegiveis)
+        VALUES (?, ?, ?, 1, ?, 'ENCERRADA', 2, 4)
+      `).bind(rodada1Id, clube1Id, c1Id, adminClube1Id).run()
+
+      // Partida 1 (Finalizada)
+      await db.prepare(`
+        INSERT INTO partidas (id, clube_id, classe_id, rodada_id, jogador_a_id, jogador_b_id, status, vencedor_id, placar_a, placar_b, data_finalizacao)
+        VALUES (?, ?, ?, ?, ?, ?, 'FINALIZADA', ?, '6/4 6/3', '4/6 3/6', datetime('now', '-2 days'))
+      `).bind(generateId(), clube1Id, c1Id, rodada1Id, jogadoresCriados[0].id, jogadoresCriados[1].id, jogadoresCriados[0].id).run()
+
+      // Partida 2 (Finalizada)
+      await db.prepare(`
+        INSERT INTO partidas (id, clube_id, classe_id, rodada_id, jogador_a_id, jogador_b_id, status, vencedor_id, placar_a, placar_b, data_finalizacao)
+        VALUES (?, ?, ?, ?, ?, ?, 'FINALIZADA', ?, '6/2 7/5', '2/6 5/7', datetime('now', '-1 days'))
+      `).bind(generateId(), clube1Id, c1Id, rodada1Id, jogadoresCriados[2].id, jogadoresCriados[3].id, jogadoresCriados[2].id).run()
+    }
+
+    // 6. Rodada #2 (Ativa) e Partidas Pendentes
+    let rodada2 = await db.prepare(`SELECT id FROM rodadas WHERE clube_id = ? AND numero = 2`).bind(clube1Id).first()
+    let rodada2Id = rodada2?.id as string
+    if (!rodada2Id) {
+      rodada2Id = generateId()
+      await db.prepare(`
+        INSERT INTO rodadas (id, clube_id, classe_id, numero, executado_por_usuario_id, status, total_partidas, total_jogadores_elegiveis)
+        VALUES (?, ?, ?, 2, ?, 'ATIVA', 2, 4)
+      `).bind(rodada2Id, clube1Id, c1Id, adminClube1Id).run()
+
+      await db.prepare(`
+        INSERT INTO partidas (id, clube_id, classe_id, rodada_id, jogador_a_id, jogador_b_id, status, data_limite)
+        VALUES (?, ?, ?, ?, ?, ?, 'PENDENTE', date('now', '+7 days'))
+      `).bind(generateId(), clube1Id, c1Id, rodada2Id, jogadoresCriados[0].id, jogadoresCriados[2].id).run()
+
+      await db.prepare(`
+        INSERT INTO partidas (id, clube_id, classe_id, rodada_id, jogador_a_id, jogador_b_id, status, data_limite)
+        VALUES (?, ?, ?, ?, ?, ?, 'EM_ANDAMENTO', date('now', '+7 days'))
+      `).bind(generateId(), clube1Id, c1Id, rodada2Id, jogadoresCriados[1].id, jogadoresCriados[3].id).run()
+    }
+
+    // 7. Pagamentos
+    const mesAtual = new Date().toISOString().slice(0, 7)
+    for (let idx = 0; idx < jogadoresCriados.length; idx++) {
+      const j = jogadoresCriados[idx]
+      const statusPg = idx % 3 === 0 ? 'PAGO' : idx % 3 === 1 ? 'PENDENTE' : 'VENCIDO'
+      let pg = await db.prepare(`SELECT id FROM pagamentos WHERE clube_id = ? AND jogador_id = ? AND referencia = ?`).bind(clube1Id, j.id, mesAtual).first()
+      if (!pg) {
+        await db.prepare(`
+          INSERT INTO pagamentos (id, clube_id, jogador_id, valor, referencia, status, metodo_pagamento, data_vencimento, data_pagamento)
+          VALUES (?, ?, ?, 150.00, ?, ?, ?, date('now', '-5 days'), ?)
+        `).bind(generateId(), clube1Id, j.id, mesAtual, statusPg, statusPg === 'PAGO' ? 'PIX' : null, statusPg === 'PAGO' ? new Date().toISOString() : null).run()
+      }
+    }
+
+    // 8. Publicações do Clube
+    let pubCount = await db.prepare(`SELECT COUNT(*) as c FROM publicacoes WHERE clube_id = ?`).bind(clube1Id).first()
+    if (!pubCount || (pubCount.c as number) === 0) {
+      await db.prepare(`
+        INSERT INTO publicacoes (id, clube_id, autor_id, titulo, conteudo, tipo, fixado)
+        VALUES (?, ?, ?, 'Bem-vindos à nova Temporada 2025!', 'O ranking do Clube Paulistano está aberto com sorteios semanais. Fiquem atentos às datas limites de partidas.', 'AVISO', 1)
+      `).bind(generateId(), clube1Id, adminClube1Id).run()
+
+      await db.prepare(`
+        INSERT INTO publicacoes (id, clube_id, autor_id, titulo, conteudo, tipo, fixado)
+        VALUES (?, ?, ?, 'Resultado da Rodada #1 - 1ª Classe', 'Carlos Silva venceu Marcelo Oliveira por 6/4 6/3 em uma partida excelente!', 'RESULTADO', 0)
+      `).bind(generateId(), clube1Id, adminClube1Id).run()
+    }
+
+    return c.json({
+      success: true,
+      message: 'Dados de teste gerados com sucesso!',
+      credenciais: {
+        admin_global: { email: 'admin@tenis.com', senha: 'Admin@2025!' },
+        admin_clube_sp: { email: 'admin.sp@tenis.com', senha: 'Admin@2025!' },
+        jogadores: { exemplo: 'carlos.silva@email.com', senha: 'Jogador@2025!' }
+      },
+      resumo: {
+        clubes: 1,
+        classes: 3,
+        jogadores: jogadoresCriados.length,
+        rodadas: 2
+      }
+    })
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
   }
@@ -182,7 +380,11 @@ function getHTML(): string {
       <div class="mt-6 p-4 bg-green-50 rounded-lg text-sm text-green-800">
         <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i>Acesso inicial:</p>
         <p>Admin: <strong>admin@tenis.com</strong> / <strong>Admin@2025!</strong></p>
-        <p class="mt-1 text-xs text-green-600">Execute /api/setup se for o primeiro acesso</p>
+        <p>Admin Clube: <strong>admin.sp@tenis.com</strong> / <strong>Admin@2025!</strong></p>
+        <p>Jogador: <strong>carlos.silva@email.com</strong> / <strong>Jogador@2025!</strong></p>
+        <button type="button" onclick="gerarDadosTeste()" class="mt-3 btn w-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs py-2 rounded font-medium flex items-center justify-center gap-1">
+          <i class="fas fa-database"></i> Gerar / Restaurar Dados de Teste
+        </button>
       </div>
       <div id="login-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
     </div>
@@ -317,6 +519,22 @@ api.interceptors.response.use(
     return Promise.reject(err)
   }
 )
+
+// ============================================================
+// SEED DE DADOS DE TESTE
+// ============================================================
+async function gerarDadosTeste() {
+  try {
+    toast('Gerando dados de teste...', 'info')
+    const res = await axios.get('/api/seed')
+    if (res.data?.success) {
+      toast('Dados de teste gerados com sucesso!')
+    }
+  } catch(e) {
+    toast('Erro ao gerar dados de teste', 'error')
+  }
+}
+window.gerarDadosTeste = gerarDadosTeste
 
 // ============================================================
 // TOAST
