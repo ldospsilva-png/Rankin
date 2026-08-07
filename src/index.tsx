@@ -294,6 +294,9 @@ document.addEventListener('click', function(e) {
   else if (action === 'novo-jogador') modalNovoJogador()
   else if (action === 'editar-jogador') modalEditarJogador(id)
   else if (action === 'status-jogador') alterarStatusJogador(id, status)
+  else if (action === 'novo-pagamento') modalNovoPagamento()
+  else if (action === 'gerar-mensalidades') modalGerarMensalidades()
+  else if (action === 'marcar-pago') marcarPago(id)
 })
 
 // ============================================================
@@ -1591,6 +1594,9 @@ async function renderPagamentos() {
     if (pgmtRes) pagamentosData = pgmtRes.data.data?.items || []
   } catch(e) {}
 
+  State.data.pgmtJogadores = jogadores
+  State.data.pgmtConfig = config
+
   setContent(\`
     <div class="space-y-5">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1604,11 +1610,11 @@ async function renderPagamentos() {
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h3 class="font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-money-bill-wave text-green-600"></i>Gestão de Pagamentos</h3>
           <div class="flex gap-2">
-            <button onclick="modalNovoPagamento(\${JSON.stringify(jogadores).replace(/'/g,'&apos;')}, \${JSON.stringify(config).replace(/'/g,'&apos;')})" 
+            <button data-action="novo-pagamento" 
               class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
               <i class="fas fa-plus"></i> Registrar Pagamento
             </button>
-            <button onclick="modalGerarMensalidades(\${JSON.stringify(jogadores).replace(/'/g,'&apos;')}, \${JSON.stringify(config).replace(/'/g,'&apos;')})"
+            <button data-action="gerar-mensalidades"
               class="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
               <i class="fas fa-calendar-plus mr-1"></i> Gerar Mensalidades
             </button>
@@ -1663,7 +1669,7 @@ async function renderPagamentos() {
                       </td>
                       <td class="px-4 py-3 text-center">
                         \${p.status !== 'PAGO' ? \`
-                          <button onclick="marcarPago('\${p.id}')" class="btn p-2 text-green-500 hover:bg-green-50 rounded-lg text-xs" title="Marcar como pago">
+                          <button data-action="marcar-pago" data-id="\${p.id}" class="btn p-2 text-green-500 hover:bg-green-50 rounded-lg text-xs" title="Marcar como pago">
                             <i class="fas fa-check"></i>
                           </button>
                         \` : '<span class="text-gray-300 text-xs">-</span>'}
@@ -1701,9 +1707,9 @@ async function renderPagamentos() {
     } catch(e) { toast(e.response?.data?.error || 'Erro', 'error') }
   }
 
-  window.modalNovoPagamento = (jogs, cfg) => {
-    const jogadores = typeof jogs === 'string' ? JSON.parse(jogs) : jogs
-    const config = typeof cfg === 'string' ? JSON.parse(cfg) : cfg
+  window.modalNovoPagamento = () => {
+    const jogadores = State.data.pgmtJogadores || []
+    const config = State.data.pgmtConfig || {}
     const mesAtual = new Date().toISOString().slice(0,7)
     const dataVenc = new Date()
     dataVenc.setDate(10)
@@ -1754,9 +1760,9 @@ async function renderPagamentos() {
     }, 'Registrar')
   }
 
-  window.modalGerarMensalidades = (jogs, cfg) => {
-    const jogadores = typeof jogs === 'string' ? JSON.parse(jogs) : jogs
-    const config = typeof cfg === 'string' ? JSON.parse(cfg) : cfg
+  window.modalGerarMensalidades = () => {
+    const jogadores = State.data.pgmtJogadores || []
+    const config = State.data.pgmtConfig || {}
     const mesAtual = new Date().toISOString().slice(0,7)
     const dataVenc = new Date()
     dataVenc.setDate(10)
