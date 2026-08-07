@@ -124,15 +124,19 @@ export function getLocalSqliteAdapter(): DBAdapter {
       console.log('📂 Inicializando novo banco de dados SQLite local (local.db)...')
       try {
         const schemaPath1 = path.join(process.cwd(), 'migrations', '0001_initial_schema.sql')
+        const schemaPath2 = path.join(process.cwd(), 'migrations', '0002_seed_admin.sql')
         const schemaPath3 = path.join(process.cwd(), 'migrations', '0003_melhorias.sql')
 
         if (fs.existsSync(schemaPath1)) {
           localSqliteDb.exec(fs.readFileSync(schemaPath1, 'utf-8'))
         }
+        if (fs.existsSync(schemaPath2)) {
+          localSqliteDb.exec(fs.readFileSync(schemaPath2, 'utf-8'))
+        }
         if (fs.existsSync(schemaPath3)) {
           localSqliteDb.exec(fs.readFileSync(schemaPath3, 'utf-8'))
         }
-        console.log('✅ Banco local.db inicializado com sucesso!')
+        console.log('✅ Banco local.db e usuário admin inicializados com sucesso!')
       } catch (e) {
         console.error('Erro ao inicializar schema local:', e)
       }
