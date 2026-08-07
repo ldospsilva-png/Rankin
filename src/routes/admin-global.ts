@@ -244,6 +244,57 @@ adminGlobal.get('/usuarios', async (c) => {
   }
 })
 
+// POST /api/admin/global/usuarios
+adminGlobal.post('/usuarios', async (c) => {
+  try {
+    const db = c.env.DB
+    const body = await c.req.json()
+    const { nome, email, senha, perfil = 'ADMIN_CLUBE', clube_id } = body
+
+    if (!nome || !email || !senha) {
+      return c.json(errorResponse('Campos obrigatórios: nome, email, senha'), 400)
+    }
+
+    if (perfil === 'ADMIN_CLUBE' && !clube_id) {
+      return c.json(errorResponse('Selecione um clube para o Admin de Clube'), 400)
+    }
+
+    const existente = await db.prepare(`SELECT id FROM usuarios WHERE email = ?`).bind(email.toLowerCase().trim()).first()
+    if (existente) {
+      return c.json(errorResponse('Email já cadastrado', 'EMAIL_EXISTS'), 409)
+    }
+
+    const senhaHash = await hashPassword(senha)
+    const id = generateId()
+
+    await db.prepare(`
+      INSERT INTO usuarios (id, nome, email, senha_hash, status, perfil, clube_id)
+      VALUES (?, ?, ?, ?, 'ATIVO', ?, ?)
+    `).bind(
+      id,
+      nome.trim(),
+      email.toLowerCase().trim(),
+      senhaHash,
+      perfil,
+      clube_id || null
+    ).run()
+
+    const audit = getAuditoriaFromContext(c)
+    await registrarAuditoria(audit.db, {
+      clube_id: clube_id || undefined,
+      usuario_id: audit.usuario_id,
+      tipo_evento: 'USUARIO_CRIADO',
+      entidade: 'usuarios',
+      entidade_id: id,
+      payload_resumido: `Usuário criado: ${email} (${perfil})`
+    })
+
+    return c.json(successResponse({ id, nome, email, perfil, clube_id }, 'Usuário criado com sucesso'), 201)
+  } catch (e: any) {
+    return c.json(errorResponse('Erro ao criar usuário: ' + (e.message || ''), 'DB_ERROR'), 500)
+  }
+})
+
 // GET /api/admin/global/auditoria
 adminGlobal.get('/auditoria', async (c) => {
   try {

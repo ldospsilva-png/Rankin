@@ -1045,16 +1045,26 @@ async function alterarStatusClube(id, statusAtual) {
 // ============================================================
 // USUÁRIOS (ADMIN GLOBAL)
 // ============================================================
+// ============================================================
+// USUÁRIOS (ADMIN GLOBAL)
+// ============================================================
 async function renderUsuarios() {
   const res = await api.get('/admin/global/usuarios')
   const usuarios = res.data.data || []
   
   setContent(\`
     <div class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="font-bold text-gray-800 text-lg">Usuários Cadastrados</h3>
+        <button onclick="modalNovoUsuarioGlobal()" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2">
+          <i class="fas fa-plus"></i> Novo Usuário
+        </button>
+      </div>
+
       <div class="card bg-white rounded-xl overflow-hidden">
         <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="font-bold text-gray-800">Todos os Usuários</h3>
-          <span class="badge badge-blue">\${usuarios.length} usuários</span>
+          <h4 class="font-semibold text-gray-700">Listagem de Contas</h4>
+          <span class="badge badge-blue">\${usuarios.length} usuário(s)</span>
         </div>
         <table class="w-full text-sm">
           <thead class="bg-gray-50">
@@ -1067,28 +1077,74 @@ async function renderUsuarios() {
             </tr>
           </thead>
           <tbody>
-            \${usuarios.map(u => \`
-              <tr class="table-row border-b border-gray-50">
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">\${u.nome.charAt(0)}</div>
-                    <div>
-                      <p class="font-medium text-gray-800">\${u.nome}</p>
-                      <p class="text-xs text-gray-400">\${u.email}</p>
+            \${usuarios.length === 0 ? '<tr><td colspan="5" class="text-center py-12 text-gray-400">Nenhum usuário cadastrado</td></tr>' :
+              usuarios.map(u => \`
+                <tr class="table-row border-b border-gray-50">
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">\${u.nome ? u.nome.charAt(0).toUpperCase() : 'U'}</div>
+                      <div>
+                        <p class="font-medium text-gray-800">\${u.nome}</p>
+                        <p class="text-xs text-gray-400">\${u.email}</p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-center hidden sm:table-cell">\${statusBadge(u.perfil === 'ADMIN_GLOBAL' ? 'ATIVO' : u.perfil === 'ADMIN_CLUBE' ? 'ATIVA' : 'PENDENTE')}<span class="ml-1 text-xs text-gray-500">\${perfilLabel(u.perfil)}</span></td>
-                <td class="px-4 py-3 hidden md:table-cell"><span class="text-sm text-gray-600">\${u.clube_nome || '<span class="text-gray-400">-</span>'}</span></td>
-                <td class="px-4 py-3 text-center hidden lg:table-cell text-xs text-gray-500">\${fmtDate(u.ultimo_login)}</td>
-                <td class="px-4 py-3 text-center">\${statusBadge(u.status)}</td>
-              </tr>
-            \`).join('')}
+                  </td>
+                  <td class="px-4 py-3 text-center hidden sm:table-cell"><span class="badge \${u.perfil === 'ADMIN_GLOBAL' ? 'badge-yellow' : u.perfil === 'ADMIN_CLUBE' ? 'badge-blue' : 'badge-gray'}">\${perfilLabel(u.perfil)}</span></td>
+                  <td class="px-4 py-3 hidden md:table-cell"><span class="text-sm text-gray-600">\${u.clube_nome || '<span class="text-gray-400">-</span>'}</span></td>
+                  <td class="px-4 py-3 text-center hidden lg:table-cell text-xs text-gray-500">\${fmtDate(u.ultimo_login)}</span></td>
+                  <td class="px-4 py-3 text-center">\${statusBadge(u.status)}</td>
+                </tr>
+              \`).join('')}
           </tbody>
         </table>
       </div>
     </div>
   \`)
+}
+
+window.modalNovoUsuarioGlobal = async function() {
+  try {
+    const clubesRes = await api.get('/admin/global/clubes?limit=100')
+    const clubes = clubesRes.data.data.items || []
+
+    showModal('Novo Usuário', \`
+      \${formGroup('Nome Completo', \`<input type="text" id="f-u-nome" class="\${inputClass()}" placeholder="Ex: Carlos Silva">\`, true)}
+      \${formGroup('E-mail', \`<input type="email" id="f-u-email" class="\${inputClass()}" placeholder="usuario@email.com">\`, true)}
+      \${formGroup('Senha', \`<input type="password" id="f-u-senha" class="\${inputClass()}" placeholder="Mínimo 6 caracteres">\`, true)}
+      \${formGroup('Perfil do Usuário', \`
+        <select id="f-u-perfil" class="\${selectClass()}" onchange="document.getElementById('f-u-clube-container').style.display = this.value === 'ADMIN_CLUBE' ? 'block' : 'none'">
+          <option value="ADMIN_CLUBE">Admin de Clube</option>
+          <option value="ADMIN_GLOBAL">Admin Global</option>
+        </select>
+      \`, true)}
+      <div id="f-u-clube-container">
+        \${formGroup('Clube Vinculado', \`
+          <select id="f-u-clube" class="\${selectClass()}">
+            <option value="">Selecione o clube...</option>
+            \${clubes.map(c => \`<option value="\${c.id}">\${c.nome}</option>\`).join('')}
+          </select>
+        \`, true)}
+      </div>
+    \`, async () => {
+      try {
+        const nome = document.getElementById('f-u-nome').value
+        const email = document.getElementById('f-u-email').value
+        const senha = document.getElementById('f-u-senha').value
+        const perfil = document.getElementById('f-u-perfil').value
+        const clube_id = document.getElementById('f-u-clube')?.value || ''
+
+        if (!nome || !email || !senha) return toast('Preencha nome, email e senha', 'error')
+        if (perfil === 'ADMIN_CLUBE' && !clube_id) return toast('Selecione o clube do Administrador', 'error')
+
+        await api.post('/admin/global/usuarios', { nome, email, senha, perfil, clube_id })
+        closeModal()
+        toast('Usuário criado com sucesso!')
+        renderUsuarios()
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar usuário', 'error') }
+    })
+  } catch(e) {
+    toast('Erro ao carregar lista de clubes', 'error')
+  }
 }
 
 // ============================================================
