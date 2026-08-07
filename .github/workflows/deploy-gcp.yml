@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch: # Permite disparar o deploy manualmente pela aba Actions do GitHub
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -15,6 +16,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Executar o job apenas se as credenciais do GCP estiverem configuradas nos Secrets
+    if: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != '' || secrets.GCP_CREDENTIALS_JSON != '' }}
     permissions:
       contents: read
       id-token: write
