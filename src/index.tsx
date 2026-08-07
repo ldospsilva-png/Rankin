@@ -83,9 +83,6 @@ app.get('/api/setup', async (c) => {
   }
 })
 
-// Servir arquivos estáticos
-app.use('/static/*', serveStatic({ root: './' }))
-
 // SPA - Servir o frontend para todas as rotas não-API
 app.get('*', (c) => {
   return c.html(getHTML())
