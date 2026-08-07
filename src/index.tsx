@@ -901,6 +901,8 @@ async function renderRelatorioPagamentosGlobal() {
 async function renderClubes() {
   const res = await api.get('/admin/global/clubes')
   const clubes = res.data.data.items || []
+  State.data.clubesMap = {}
+  clubes.forEach(c => { State.data.clubesMap[c.id] = c })
   
   setContent(\`
     <div class="space-y-4">
@@ -942,7 +944,7 @@ async function renderClubes() {
                 <td class="px-4 py-3 text-center">\${statusBadge(c.status)}</td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex justify-center gap-1">
-                    <button onclick="modalEditarClube('\${c.id}', \${JSON.stringify(c).replace(/'/g, '&apos;')})" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="modalEditarClube('\${c.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
                     <button onclick="modalAdminClube('\${c.id}', '\${c.nome}')" class="btn p-2 text-purple-500 hover:bg-purple-50 rounded-lg" title="Add Admin"><i class="fas fa-user-plus"></i></button>
                     <button onclick="alterarStatusClube('\${c.id}', '\${c.status}')" class="btn p-2 \${c.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${c.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
                       <i class="fas fa-\${c.status === 'ATIVO' ? 'ban' : 'check-circle'}"></i>
@@ -989,7 +991,8 @@ function modalNovoClube() {
   })
 }
 
-function modalEditarClube(id, c) {
+function modalEditarClube(id) {
+  const c = State.data.clubesMap?.[id] || {}
   showModal('Editar Clube', \`
     \${formGroup('Nome do Clube', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${c.nome || ''}">\`, true)}
     <div class="grid grid-cols-2 gap-3">
@@ -1266,6 +1269,8 @@ async function renderDashboardClube() {
 async function renderClasses() {
   const res = await api.get('/admin/clube/classes')
   const classes = res.data.data || []
+  State.data.classesMap = {}
+  classes.forEach(cl => { State.data.classesMap[cl.id] = cl })
   
   setContent(\`
     <div class="space-y-4">
@@ -1304,7 +1309,7 @@ async function renderClasses() {
                 </div>
               </div>
               <div class="flex gap-2">
-                <button onclick="modalEditarClasse('\${cl.id}', \${JSON.stringify(cl).replace(/'/g, '&apos;')})" class="btn flex-1 border border-gray-200 text-gray-600 py-1.5 rounded-lg text-xs hover:bg-gray-50 font-medium">
+                <button onclick="modalEditarClasse('\${cl.id}')" class="btn flex-1 border border-gray-200 text-gray-600 py-1.5 rounded-lg text-xs hover:bg-gray-50 font-medium">
                   <i class="fas fa-edit mr-1"></i>Editar
                 </button>
                 <button onclick="alterarStatusClasse('\${cl.id}', '\${cl.status}')" class="btn flex-1 \${cl.status === 'ATIVA' ? 'border border-red-200 text-red-500 hover:bg-red-50' : 'border border-green-200 text-green-600 hover:bg-green-50'} py-1.5 rounded-lg text-xs font-medium">
@@ -1336,9 +1341,10 @@ function modalNovaClasse() {
   })
 }
 
-function modalEditarClasse(id, cl) {
+function modalEditarClasse(id) {
+  const cl = State.data.classesMap?.[id] || {}
   showModal('Editar Classe', \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${cl.nome}">\`, true)}
+    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${cl.nome || ''}">\`, true)}
     \${formGroup('Descrição', \`<textarea id="f-desc" class="\${inputClass()}" rows="2">\${cl.descricao || ''}</textarea>\`)}
     \${formGroup('Ordem', \`<input type="number" id="f-ordem" class="\${inputClass()}" value="\${cl.ordem || 0}" min="0">\`)}
   \`, async () => {
@@ -1373,6 +1379,8 @@ async function renderJogadores() {
   const classes = clRes.data.data || []
   
   State.data.classes = classes
+  State.data.jogadoresMap = {}
+  jogadores.forEach(j => { State.data.jogadoresMap[j.id] = j })
 
   setContent(\`
     <div class="space-y-4">
@@ -1435,7 +1443,7 @@ async function renderJogadores() {
                 </td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex justify-center gap-1">
-                    <button onclick="modalEditarJogador('\${j.id}', \${JSON.stringify(j).replace(/'/g, '&apos;')})" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="modalEditarJogador('\${j.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
                     <button onclick="alterarStatusJogador('\${j.id}', '\${j.status}')" class="btn p-2 \${j.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${j.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
                       <i class="fas fa-\${j.status === 'ATIVO' ? 'user-slash' : 'user-check'}"></i>
                     </button>
@@ -1494,10 +1502,11 @@ function modalNovoJogador() {
   })
 }
 
-function modalEditarJogador(id, j) {
+function modalEditarJogador(id) {
+  const j = State.data.jogadoresMap?.[id] || {}
   const classes = State.data.classes || []
   showModal('Editar Jogador', \`
-    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${j.nome}">\`, true)}
+    \${formGroup('Nome', \`<input type="text" id="f-nome" class="\${inputClass()}" value="\${j.nome || ''}">\`, true)}
     \${formGroup('Classe', \`
       <select id="f-classe" class="\${selectClass()}">
         \${classes.map(cl => \`<option value="\${cl.id}" \${cl.id === j.classe_id ? 'selected' : ''}>\${cl.nome}</option>\`).join('')}
