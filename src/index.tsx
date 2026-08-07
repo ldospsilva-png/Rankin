@@ -944,9 +944,9 @@ async function renderClubes() {
                 <td class="px-4 py-3 text-center">\${statusBadge(c.status)}</td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex justify-center gap-1">
-                    <button onclick="modalEditarClube('\${c.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button onclick="modalAdminClube('\${c.id}', '\${c.nome}')" class="btn p-2 text-purple-500 hover:bg-purple-50 rounded-lg" title="Add Admin"><i class="fas fa-user-plus"></i></button>
-                    <button onclick="alterarStatusClube('\${c.id}', '\${c.status}')" class="btn p-2 \${c.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${c.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
+                    <button onclick="window.modalEditarClube('\${c.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="window.modalAdminClube('\${c.id}')" class="btn p-2 text-purple-500 hover:bg-purple-50 rounded-lg" title="Add Admin"><i class="fas fa-user-plus"></i></button>
+                    <button onclick="window.alterarStatusClube('\${c.id}', '\${c.status}')" class="btn p-2 \${c.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${c.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
                       <i class="fas fa-\${c.status === 'ATIVO' ? 'ban' : 'check-circle'}"></i>
                     </button>
                   </div>
@@ -1314,10 +1314,10 @@ async function renderClasses() {
                 </div>
               </div>
               <div class="flex gap-2">
-                <button onclick="modalEditarClasse('\${cl.id}')" class="btn flex-1 border border-gray-200 text-gray-600 py-1.5 rounded-lg text-xs hover:bg-gray-50 font-medium">
+                <button onclick="window.modalEditarClasse('\${cl.id}')" class="btn flex-1 border border-gray-200 text-gray-600 py-1.5 rounded-lg text-xs hover:bg-gray-50 font-medium">
                   <i class="fas fa-edit mr-1"></i>Editar
                 </button>
-                <button onclick="alterarStatusClasse('\${cl.id}', '\${cl.status}')" class="btn flex-1 \${cl.status === 'ATIVA' ? 'border border-red-200 text-red-500 hover:bg-red-50' : 'border border-green-200 text-green-600 hover:bg-green-50'} py-1.5 rounded-lg text-xs font-medium">
+                <button onclick="window.alterarStatusClasse('\${cl.id}', '\${cl.status}')" class="btn flex-1 \${cl.status === 'ATIVA' ? 'border border-red-200 text-red-500 hover:bg-red-50' : 'border border-green-200 text-green-600 hover:bg-green-50'} py-1.5 rounded-lg text-xs font-medium">
                   \${cl.status === 'ATIVA' ? '<i class="fas fa-ban mr-1"></i>Inativar' : '<i class="fas fa-check mr-1"></i>Ativar'}
                 </button>
               </div>
@@ -1450,8 +1450,8 @@ async function renderJogadores() {
                 </td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex justify-center gap-1">
-                    <button onclick="modalEditarJogador('\${j.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button onclick="alterarStatusJogador('\${j.id}', '\${j.status}')" class="btn p-2 \${j.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${j.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
+                    <button onclick="window.modalEditarJogador('\${j.id}')" class="btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="window.alterarStatusJogador('\${j.id}', '\${j.status}')" class="btn p-2 \${j.status === 'ATIVO' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} rounded-lg" title="\${j.status === 'ATIVO' ? 'Inativar' : 'Ativar'}">
                       <i class="fas fa-\${j.status === 'ATIVO' ? 'user-slash' : 'user-check'}"></i>
                     </button>
                     <button onclick="navigateTo('pagamentos')" class="btn p-2 text-green-500 hover:bg-green-50 rounded-lg" title="Ver pagamentos">
