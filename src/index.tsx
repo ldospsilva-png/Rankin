@@ -272,9 +272,6 @@ const State = {
   data: {}
 }
 
-// ============================================================
-// GLOBAL EVENT DELEGATION
-// ============================================================
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('[data-action]')
   if (!btn) return
@@ -283,20 +280,24 @@ document.addEventListener('click', function(e) {
   const id = btn.dataset.id
   const status = btn.dataset.status
 
-  if (action === 'novo-clube') modalNovoClube()
-  else if (action === 'editar-clube') modalEditarClube(id)
-  else if (action === 'admin-clube') modalAdminClube(id)
-  else if (action === 'status-clube') alterarStatusClube(id, status)
-  else if (action === 'novo-usuario-global') modalNovoUsuarioGlobal()
-  else if (action === 'nova-classe') modalNovaClasse()
-  else if (action === 'editar-classe') modalEditarClasse(id)
-  else if (action === 'status-classe') alterarStatusClasse(id, status)
-  else if (action === 'novo-jogador') modalNovoJogador()
-  else if (action === 'editar-jogador') modalEditarJogador(id)
-  else if (action === 'status-jogador') alterarStatusJogador(id, status)
-  else if (action === 'novo-pagamento') modalNovoPagamento()
-  else if (action === 'gerar-mensalidades') modalGerarMensalidades()
-  else if (action === 'marcar-pago') marcarPago(id)
+  try {
+    if (action === 'novo-clube') (window.modalNovoClube || modalNovoClube)()
+    else if (action === 'editar-clube') (window.modalEditarClube || modalEditarClube)(id)
+    else if (action === 'admin-clube') (window.modalAdminClube || modalAdminClube)(id)
+    else if (action === 'status-clube') (window.alterarStatusClube || alterarStatusClube)(id, status)
+    else if (action === 'novo-usuario-global') (window.modalNovoUsuarioGlobal || modalNovoUsuarioGlobal)()
+    else if (action === 'nova-classe') (window.modalNovaClasse || modalNovaClasse)()
+    else if (action === 'editar-classe') (window.modalEditarClasse || modalEditarClasse)(id)
+    else if (action === 'status-classe') (window.alterarStatusClasse || alterarStatusClasse)(id, status)
+    else if (action === 'novo-jogador') (window.modalNovoJogador || modalNovoJogador)()
+    else if (action === 'editar-jogador') (window.modalEditarJogador || modalEditarJogador)(id)
+    else if (action === 'status-jogador') (window.alterarStatusJogador || alterarStatusJogador)(id, status)
+    else if (action === 'novo-pagamento') (window.modalNovoPagamento || modalNovoPagamento)()
+    else if (action === 'gerar-mensalidades') (window.modalGerarMensalidades || modalGerarMensalidades)()
+    else if (action === 'marcar-pago') (window.marcarPago || marcarPago)(id)
+  } catch (err) {
+    console.error('Erro na ação:', action, err)
+  }
 })
 
 // ============================================================
