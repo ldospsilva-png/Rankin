@@ -643,19 +643,24 @@ const navItems = {
     { id: 'dashboard', label: 'Dashboard', icon: 'chart-line' },
     { id: 'classes', label: 'Classes', icon: 'layer-group' },
     { id: 'jogadores', label: 'Jogadores', icon: 'user-friends' },
+    { id: 'solicitacoes', label: 'Solicitações', icon: 'user-clock' },
     { id: 'pagamentos', label: 'Pagamentos', icon: 'money-bill-wave' },
     { id: 'sorteios', label: 'Sorteios', icon: 'random' },
     { id: 'rodadas', label: 'Rodadas', icon: 'calendar-alt' },
     { id: 'partidas', label: 'Partidas', icon: 'table-tennis' },
+    { id: 'torneios', label: 'Torneios', icon: 'sitemap' },
     { id: 'ranking', label: 'Ranking', icon: 'trophy' },
     { id: 'publicacoes', label: 'Publicações', icon: 'newspaper' },
+    { id: 'notificacoes', label: 'Notificações', icon: 'bell' },
     { id: 'configuracoes', label: 'Configurações', icon: 'cog' },
   ],
   JOGADOR: [
     { id: 'dashboard', label: 'Meu Painel', icon: 'home' },
     { id: 'ranking', label: 'Ranking', icon: 'trophy' },
     { id: 'minhas-partidas', label: 'Minhas Partidas', icon: 'table-tennis' },
+    { id: 'torneios', label: 'Torneios', icon: 'sitemap' },
     { id: 'desafios', label: 'Desafios', icon: 'fist-raised' },
+    { id: 'notificacoes', label: 'Notificações', icon: 'bell' },
     { id: 'publicacoes', label: 'Publicações', icon: 'newspaper' },
     { id: 'perfil', label: 'Meu Perfil', icon: 'user' },
   ]
@@ -682,11 +687,12 @@ function navigateTo(page) {
   const titles = {
     dashboard: 'Dashboard', clubes: 'Gestão de Clubes', usuarios: 'Usuários',
     auditoria: 'Auditoria', classes: 'Classes', jogadores: 'Jogadores',
+    solicitacoes: 'Solicitações de Filiação', pagamentos: 'Gestão de Pagamentos',
     sorteios: 'Sorteio de Rodada', rodadas: 'Rodadas', partidas: 'Partidas',
-    ranking: 'Ranking', configuracoes: 'Configurações', 'minhas-partidas': 'Minhas Partidas',
-    perfil: 'Meu Perfil', pagamentos: 'Gestão de Pagamentos', desafios: 'Desafios',
-    publicacoes: 'Publicações', 'relatorio-jogadores': 'Relatório de Jogadores',
-    'relatorio-pagamentos': 'Relatório de Pagamentos'
+    torneios: 'Gestão de Torneios', ranking: 'Ranking', publicacoes: 'Publicações',
+    notificacoes: 'Central de Notificações', configuracoes: 'Configurações',
+    'minhas-partidas': 'Minhas Partidas', perfil: 'Meu Perfil', desafios: 'Desafios',
+    'relatorio-jogadores': 'Relatório de Jogadores', 'relatorio-pagamentos': 'Relatório de Pagamentos'
   }
   document.getElementById('page-title').textContent = titles[page] || page
 
@@ -728,18 +734,21 @@ async function renderPage(page) {
     else if (page === 'relatorio-pagamentos' && perfil === 'ADMIN_GLOBAL') await renderRelatorioPagamentosGlobal()
     else if (page === 'classes') await renderClasses()
     else if (page === 'jogadores') await renderJogadores()
+    else if (page === 'solicitacoes') await renderSolicitacoes()
     else if (page === 'pagamentos' && perfil === 'ADMIN_CLUBE') await renderPagamentos()
     else if (page === 'sorteios') await renderSorteios()
     else if (page === 'rodadas') await renderRodadas()
     else if (page === 'partidas') await renderPartidas()
+    else if (page === 'torneios') await renderTorneiosView()
     else if (page === 'ranking') {
       if (perfil === 'ADMIN_CLUBE' || perfil === 'ADMIN_GLOBAL') await renderRankingAdmin()
       else await renderRankingJogador()
     }
+    else if (page === 'publicacoes') await renderPublicacoes()
+    else if (page === 'notificacoes') await renderNotificacoesView()
     else if (page === 'configuracoes') await renderConfiguracoes()
     else if (page === 'minhas-partidas') await renderMinhasPartidas()
     else if (page === 'desafios') await renderDesafiosJogador()
-    else if (page === 'publicacoes') await renderPublicacoes()
     else if (page === 'perfil') await renderPerfil()
     else setContent('<div class="text-center text-gray-400 mt-20"><i class="fas fa-construction text-4xl mb-4"></i><p>Página em desenvolvimento</p></div>')
   } catch(e) {
@@ -2030,6 +2039,205 @@ async function renderPagamentos() {
         renderPagamentos()
       } catch(e) { toast('Erro ao gerar mensalidades', 'error') }
     }, 'Gerar Mensalidades')
+  }
+}
+
+// ============================================================
+// SOLICITAÇÕES DE FILIAÇÃO
+// ============================================================
+async function renderSolicitacoes() {
+  let solicitacoes = []
+  try {
+    const res = await api.get('/admin/clube/solicitacoes').catch(() => null)
+    solicitacoes = res?.data?.data || []
+  } catch(e) {}
+
+  const classesRes = await api.get('/admin/clube/classes?status=ATIVA').catch(() => ({ data: { data: [] } }))
+  const classes = classesRes.data.data || []
+
+  setContent(\`
+    <div class="space-y-4 max-w-4xl mx-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-gray-800 text-lg">Solicitações de Filiação</h3>
+        <span class="badge badge-blue">\${solicitacoes.length} pendente(s)</span>
+      </div>
+
+      <div class="card bg-white rounded-xl overflow-hidden">
+        \${solicitacoes.length === 0 ? \`
+          <div class="p-12 text-center text-gray-400">
+            <i class="fas fa-check-circle text-4xl mb-3 text-green-500"></i>
+            <p class="font-medium text-gray-600">Nenhuma solicitação pendente no momento</p>
+          </div>
+        \` : \`
+          <div class="divide-y divide-gray-100">
+            \${solicitacoes.map(s => \`
+              <div class="p-4 flex flex-wrap items-center justify-between gap-3 hover:bg-gray-50">
+                <div>
+                  <p class="font-bold text-gray-800">\${s.nome || s.usuario_nome}</p>
+                  <p class="text-xs text-gray-500">\${s.email} · \${s.cidade || ''} \${s.estado ? '/ ' + s.estado : ''}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Cadastrado em: \${fmtDate(s.created_at)}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <select id="sol-classe-\${s.id}" class="\${selectClass()} text-xs py-1.5 w-40">
+                    <option value="">Selecione classe...</option>
+                    \${classes.map(cl => \`<option value="\${cl.id}">\${cl.nome}</option>\`).join('')}
+                  </select>
+                  <button onclick="aprovarSolicitacao('\${s.id}')" class="btn bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium">
+                    <i class="fas fa-check mr-1"></i> Aprovar
+                  </button>
+                  <button onclick="rejeitarSolicitacao('\${s.id}')" class="btn bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-medium">
+                    <i class="fas fa-times mr-1"></i> Rejeitar
+                  </button>
+                </div>
+              </div>
+            \`).join('')}
+          </div>
+        \`}
+      </div>
+    </div>
+  \`)
+
+  window.aprovarSolicitacao = async (id) => {
+    const classeId = document.getElementById('sol-classe-' + id)?.value
+    if (!classeId) { toast('Selecione uma classe para o jogador', 'warning'); return }
+    try {
+      await api.patch('/admin/clube/solicitacoes/' + id, { status: 'APROVADA', classe_id: classeId })
+      toast('Solicitação aprovada e jogador vinculado!')
+      renderSolicitacoes()
+    } catch(e) { toast(e.response?.data?.error || 'Erro ao aprovar', 'error') }
+  }
+
+  window.rejeitarSolicitacao = async (id) => {
+    confirmDelete('Deseja realmente rejeitar esta solicitação de filiação?', async () => {
+      try {
+        await api.patch('/admin/clube/solicitacoes/' + id, { status: 'REJEITADA' })
+        closeModal(); toast('Solicitação rejeitada.', 'info'); renderSolicitacoes()
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao rejeitar', 'error') }
+    })
+  }
+}
+
+// ============================================================
+// TORNEIOS
+// ============================================================
+async function renderTorneiosView() {
+  const perfil = State.user.perfil
+  let torneios = []
+  try {
+    const res = await api.get('/admin/clube/torneios').catch(() => null)
+    torneios = res?.data?.data || []
+  } catch(e) {}
+
+  setContent(\`
+    <div class="space-y-4 max-w-4xl mx-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-gray-800 text-lg">Torneios do Clube</h3>
+        \${perfil !== 'JOGADOR' ? \`
+          <button onclick="modalNovoTorneio()" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2">
+            <i class="fas fa-plus"></i> Novo Torneio
+          </button>
+        \` : ''}
+      </div>
+
+      <div class="grid gap-4">
+        \${torneios.length === 0 ? \`
+          <div class="card bg-white rounded-xl p-12 text-center text-gray-400">
+            <i class="fas fa-sitemap text-4xl mb-3 text-gray-300"></i>
+            <p class="font-medium text-gray-600">Nenhum torneio cadastrado ainda</p>
+          </div>
+        \` : torneios.map(t => \`
+          <div class="card bg-white rounded-xl p-5 border-l-4 \${t.status === 'EM_ANDAMENTO' ? 'border-blue-500' : t.status === 'INSCRICOES' ? 'border-green-500' : 'border-gray-300'}">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-gray-800 text-lg">\${t.nome}</h4>
+                  \${statusBadge(t.status)}
+                </div>
+                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-calendar mr-1"></i>\${fmtDateOnly(t.data_inicio)} até \${fmtDateOnly(t.data_fim)}</p>
+                \${t.descricao ? \`<p class="text-sm text-gray-600 mt-2">\${t.descricao}</p>\` : ''}
+              </div>
+              <span class="badge badge-purple text-xs">\${t.total_categorias || 0} Categoria(s)</span>
+            </div>
+          </div>
+        \`).join('')}
+      </div>
+    </div>
+  \`)
+
+  window.modalNovoTorneio = () => {
+    showModal('Novo Torneio', \`
+      \${formGroup('Nome do Torneio', \`<input type="text" id="f-t-nome" class="\${inputClass()}" placeholder="Ex: Torneio de Primavera 2026">\`, true)}
+      <div class="grid grid-cols-2 gap-3">
+        \${formGroup('Data Início', \`<input type="date" id="f-t-inicio" class="\${inputClass()}">\`, true)}
+        \${formGroup('Data Fim', \`<input type="date" id="f-t-fim" class="\${inputClass()}">\`, true)}
+      </div>
+      \${formGroup('Descrição', \`<textarea id="f-t-desc" class="\${inputClass()}" rows="2" placeholder="Regras ou informações do torneio..."></textarea>\`)}
+    \`, async () => {
+      try {
+        const nome = document.getElementById('f-t-nome').value
+        const inicio = document.getElementById('f-t-inicio').value
+        const fim = document.getElementById('f-t-fim').value
+        const desc = document.getElementById('f-t-desc').value
+        if (!nome || !inicio || !fim) { toast('Preencha os campos obrigatórios', 'warning'); return }
+
+        await api.post('/admin/clube/torneios', { nome, data_inicio: inicio, data_fim: fim, descricao: desc })
+        closeModal(); toast('Torneio criado com sucesso!'); renderTorneiosView()
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar torneio', 'error') }
+    }, 'Criar Torneio')
+  }
+}
+
+// ============================================================
+// CENTRAL DE NOTIFICAÇÕES
+// ============================================================
+async function renderNotificacoesView() {
+  let notificacoes = []
+  try {
+    const res = await api.get('/admin/clube/notificacoes').catch(() => null)
+    notificacoes = res?.data?.data || []
+  } catch(e) {}
+
+  setContent(\`
+    <div class="space-y-4 max-w-3xl mx-auto">
+      <div class="card bg-white rounded-xl p-5">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-paper-plane text-blue-500"></i>Enviar Notificação em Lote</h3>
+        <div class="space-y-3">
+          \${formGroup('Título / Assunto', \`<input type="text" id="notif-titulo" class="\${inputClass()}" placeholder="Ex: Início da Rodada #3">\`)}
+          \${formGroup('Mensagem', \`<textarea id="notif-msg" class="\${inputClass()}" rows="3" placeholder="Mensagem personalizada para os jogadores..."></textarea>\`)}
+          <button onclick="enviarNotificacaoGeral()" class="btn bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm flex items-center gap-2">
+            <i class="fas fa-bell"></i> Enviar para Todos os Membros
+          </button>
+        </div>
+      </div>
+
+      <div class="card bg-white rounded-xl p-5">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-history text-gray-500"></i>Histórico de Envios</h3>
+        \${notificacoes.length === 0 ? '<p class="text-gray-400 text-sm text-center py-8">Nenhuma notificação enviada ainda</p>' : \`
+          <div class="space-y-2">
+            \${notificacoes.map(n => \`
+              <div class="p-3 bg-gray-50 rounded-lg">
+                <p class="font-semibold text-gray-800 text-sm">\${n.titulo}</p>
+                <p class="text-xs text-gray-600 mt-1">\${n.mensagem}</p>
+                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-clock mr-1"></i>\${fmtDate(n.created_at)}</p>
+              </div>
+            \`).join('')}
+          </div>
+        \`}
+      </div>
+    </div>
+  \`)
+
+  window.enviarNotificacaoGeral = async () => {
+    const titulo = document.getElementById('notif-titulo')?.value
+    const mensagem = document.getElementById('notif-msg')?.value
+
+    if (!titulo || !mensagem) { toast('Preencha título e mensagem', 'warning'); return }
+
+    try {
+      await api.post('/admin/clube/notificacoes', { titulo, mensagem, tipo: 'GERAL' })
+      toast('Notificação enviada para todos os membros!')
+      renderNotificacoesView()
+    } catch(e) { toast(e.response?.data?.error || 'Erro ao enviar notificação', 'error') }
   }
 }
 
