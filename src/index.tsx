@@ -17,6 +17,7 @@ import pagamentosRoutes from './routes/pagamentos'
 import desafiosRoutes from './routes/desafios'
 import publicacoesRoutes from './routes/publicacoes'
 import notificacoesRoutes from './routes/notificacoes'
+import torneiosRoutes from './routes/torneios'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
@@ -47,6 +48,7 @@ app.route('/api/admin/global', adminGlobalRoutes)
 app.route('/api/admin/clube', adminClubeRoutes)
 app.route('/api/admin/clube/pagamentos', pagamentosRoutes)
 app.route('/api/admin/clube/notificacoes', notificacoesRoutes)
+app.route('/api/admin/clube/torneios', torneiosRoutes)
 app.route('/api/jogador', jogadorRoutes)
 app.route('/api/desafios', desafiosRoutes)
 app.route('/api/publicacoes', publicacoesRoutes)
@@ -2437,7 +2439,27 @@ function filtrarPartidas() {
   })
 }
 
+function parseSets(placarStr) {
+  if (!placarStr) return ['', '', '']
+  const m = placarStr.toString().match(/^(\d+)-(\d+)$/)
+  if (m) return [m[1], m[2], '']
+  const digits = placarStr.toString().replace(/\D/g, '')
+  return [digits, '', '']
+}
+
+function parseSetsB(placarStr) {
+  if (!placarStr) return ['', '', '']
+  const m = placarStr.toString().match(/^(\d+)-(\d+)$/)
+  if (m) return [m[2], m[1], '']
+  const digits = placarStr.toString().replace(/\D/g, '')
+  return ['', digits, '']
+}
+
+function _mirrorSet() {}
+
 function modalAtualizarPartida(id, p) {
+  const [s1a, s1b] = parseSets(p.placar_a)
+
   showModal(\`Atualizar Partida\`, \`
     <div class="mb-4 p-3 bg-gray-50 rounded-lg text-center">
       <p class="font-semibold text-gray-800">\${p.jogador_a_nome} vs \${p.jogador_b_nome}</p>
@@ -2447,33 +2469,43 @@ function modalAtualizarPartida(id, p) {
       <select id="f-status" class="\${selectClass()}">
         <option value="PENDENTE" \${p.status==='PENDENTE'?'selected':''}>Pendente</option>
         <option value="EM_ANDAMENTO" \${p.status==='EM_ANDAMENTO'?'selected':''}>Em Andamento</option>
-        <option value="FINALIZADA">Finalizada</option>
-        <option value="WO">W.O.</option>
-        <option value="CANCELADA">Cancelada</option>
+        <option value="FINALIZADA" \${p.status==='FINALIZADA'?'selected':''}>Finalizada</option>
+        <option value="WO" \${p.status==='WO'?'selected':''}>W.O.</option>
+        <option value="CANCELADA" \${p.status==='CANCELADA'?'selected':''}>Cancelada</option>
       </select>
     \`)}
     \${formGroup('Vencedor', \`
       <select id="f-vencedor" class="\${selectClass()}">
         <option value="">-- Selecione se houver vencedor --</option>
-        <option value="\${p.jogador_a_id}">\${p.jogador_a_nome}</option>
-        <option value="\${p.jogador_b_id}">\${p.jogador_b_nome}</option>
+        <option value="\${p.jogador_a_id}" \${p.vencedor_id === p.jogador_a_id ? 'selected' : ''}>\${p.jogador_a_nome}</option>
+        <option value="\${p.jogador_b_id}" \${p.vencedor_id === p.jogador_b_id ? 'selected' : ''}>\${p.jogador_b_nome}</option>
       </select>
     \`)}
-    <div class="grid grid-cols-2 gap-3">
-      \${formGroup('Placar A', \`<input type="text" id="f-placar-a" class="\${inputClass()}" value="\${p.placar_a || ''}" placeholder="6-3, 7-5">\`)}
-      \${formGroup('Placar B', \`<input type="text" id="f-placar-b" class="\${inputClass()}" value="\${p.placar_b || ''}" placeholder="3-6, 5-7">\`)}
+    <div class="flex items-center gap-3">
+      <div class="flex-1 min-w-0">
+        \${formGroup('Placar ' + (p.jogador_a_nome || 'Jogador A'), \`<input type="text" id="r-s1a" class="\${inputClass()}" value="\${s1a || p.placar_a || ''}" placeholder="Ex: 6">\`)}
+      </div>
+      <div class="flex-1 min-w-0">
+        \${formGroup('Placar ' + (p.jogador_b_nome || 'Jogador B'), \`<input type="text" id="r-s1b" class="\${inputClass()}" value="\${s1b || p.placar_b || ''}" placeholder="Ex: 3">\`)}
+      </div>
     </div>
     \${formGroup('Observações', \`<textarea id="f-obs" class="\${inputClass()}" rows="2" placeholder="Observações opcionais...">\${p.observacoes || ''}</textarea>\`)}
   \`, async () => {
     try {
+      const rawA = (document.getElementById('r-s1a')?.value || '').toString().replace(/\D/g, '')
+      const rawB = (document.getElementById('r-s1b')?.value || '').toString().replace(/\D/g, '')
+      
+      const statusVal = document.getElementById('f-status').value
+      const vencedorVal = document.getElementById('f-vencedor').value || null
+
       await api.patch('/admin/clube/partidas/' + id, {
-        status: document.getElementById('f-status').value,
-        vencedor_id: document.getElementById('f-vencedor').value || null,
-        placar_a: document.getElementById('f-placar-a').value,
-        placar_b: document.getElementById('f-placar-b').value,
+        status: statusVal,
+        vencedor_id: vencedorVal,
+        placar_a: rawA,
+        placar_b: rawB,
         observacoes: document.getElementById('f-obs').value
       })
-      closeModal(); toast('Partida atualizada!'); renderPartidas()
+      closeModal(); toast('Partida atualizada com sucesso!'); renderPartidas()
     } catch(e) { toast(e.response?.data?.error || 'Erro ao atualizar partida', 'error') }
   }, 'Salvar Resultado')
 }
