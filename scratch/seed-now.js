@@ -189,6 +189,48 @@ async function runSeed() {
     `).run(generateId(), clube1Id, adminClube1Id)
   }
 
+  // 8. Torneio de Teste
+  let torneioEx = db.prepare(`SELECT id FROM torneios WHERE clube_id = ? AND nome = 'Torneio de Verão 2026'`).get(clube1Id)
+  let torneioExId = torneioEx?.id
+  if (!torneioExId) {
+    torneioExId = generateId()
+    db.prepare(`
+      INSERT INTO torneios (id, clube_id, nome, descricao, data_inicio, data_fim, status)
+      VALUES (?, ?, 'Torneio de Verão 2026', 'Grande Torneio Eliminatório de Início de Temporada com troféus para os finalistas!', '2026-02-15', '2026-02-28', 'EM_ANDAMENTO')
+    `).run(torneioExId, clube1Id)
+
+    const cat1Id = generateId()
+    db.prepare(`
+      INSERT INTO torneio_categorias (id, torneio_id, classe_id, nome, formato_jogo, formato_set, max_participantes, status)
+      VALUES (?, ?, ?, 'Cat. A Simples', 'ELIMINATORIO', '3SETS', 16, 'EM_ANDAMENTO')
+    `).run(cat1Id, torneioExId, c1Id)
+
+    const cat2Id = generateId()
+    db.prepare(`
+      INSERT INTO torneio_categorias (id, torneio_id, classe_id, nome, formato_jogo, formato_set, max_participantes, status)
+      VALUES (?, ?, ?, 'Cat. B Simples', 'ELIMINATORIO', 'SET_PRO', 16, 'INSCRICOES')
+    `).run(cat2Id, torneioExId, classesIds['2ª Classe Masculina'])
+
+    // Inscrever 4 jogadores na Categoria A
+    for (let i = 0; i < 4; i++) {
+      db.prepare(`
+        INSERT INTO torneio_inscricoes (id, categoria_id, jogador_id, seed, status)
+        VALUES (?, ?, ?, ?, 'CONFIRMADA')
+      `).run(generateId(), cat1Id, jogadoresCriados[i].id, i + 1)
+    }
+
+    // Gerar partidas para a Categoria A (Rodada 1)
+    db.prepare(`
+      INSERT INTO torneio_partidas (id, categoria_id, rodada, posicao_chave, jogador_a_id, jogador_b_id, status)
+      VALUES (?, ?, 1, 1, ?, ?, 'PENDENTE')
+    `).run(generateId(), cat1Id, jogadoresCriados[0].id, jogadoresCriados[3].id)
+
+    db.prepare(`
+      INSERT INTO torneio_partidas (id, categoria_id, rodada, posicao_chave, jogador_a_id, jogador_b_id, status)
+      VALUES (?, ?, 1, 2, ?, ?, 'PENDENTE')
+    `).run(generateId(), cat1Id, jogadoresCriados[1].id, jogadoresCriados[2].id)
+  }
+
   console.log('✅ Banco de dados local (local.db) populado com sucesso!')
 }
 

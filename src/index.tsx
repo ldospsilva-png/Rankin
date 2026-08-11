@@ -2130,52 +2130,103 @@ async function renderSolicitacoes() {
 }
 
 // ============================================================
-// TORNEIOS
+// TORNEIOS (MÓDULO COMPLETO 5.1 a 5.8)
 // ============================================================
 async function renderTorneiosView() {
   const perfil = State.user.perfil
   let torneios = []
-  try {
-    const res = await api.get('/admin/clube/torneios').catch(() => null)
-    torneios = res?.data?.data || []
-  } catch(e) {}
+  let filtroStatus = 'TODOS'
 
-  setContent(\`
-    <div class="space-y-4 max-w-4xl mx-auto">
-      <div class="flex items-center justify-between">
-        <h3 class="font-bold text-gray-800 text-lg">Torneios do Clube</h3>
-        \${perfil !== 'JOGADOR' ? \`
-          <button onclick="modalNovoTorneio()" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2">
-            <i class="fas fa-plus"></i> Novo Torneio
+  async function carregarTorneios() {
+    try {
+      const url = filtroStatus !== 'TODOS' ? '/admin/clube/torneios?status=' + filtroStatus : '/admin/clube/torneios'
+      const res = await api.get(url).catch(() => null)
+      torneios = res?.data?.data || []
+    } catch(e) {}
+    render()
+  }
+
+  function render() {
+    setContent(\`
+      <div class="space-y-6 max-w-5xl mx-auto">
+        <!-- Topo: Título e Botão Novo Torneio -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-gray-800 text-xl flex items-center gap-2">
+              <i class="fas fa-sitemap text-green-600"></i> Gestão de Torneios do Clube
+            </h3>
+            <p class="text-xs text-gray-500">Crie torneios, categorias, gerencie inscrições e chaves eliminatórias</p>
+          </div>
+          \${perfil !== 'JOGADOR' ? \`
+            <button onclick="modalNovoTorneio()" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm">
+              <i class="fas fa-plus"></i> Novo Torneio
+            </button>
+          \` : ''}
+        </div>
+
+        <!-- 5.1 Filtros por Status (Badges) -->
+        <div class="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto">
+          <button onclick="filtrarTorneios('TODOS')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition \${filtroStatus === 'TODOS' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+            TODOS
           </button>
-        \` : ''}
-      </div>
+          <button onclick="filtrarTorneios('EM_ANDAMENTO')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition \${filtroStatus === 'EM_ANDAMENTO' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'}">
+            ⚡ EM ANDAMENTO
+          </button>
+          <button onclick="filtrarTorneios('INSCRICOES')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition \${filtroStatus === 'INSCRICOES' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'}">
+            📝 INSCRIÇÕES ABERTAS
+          </button>
+          <button onclick="filtrarTorneios('FINALIZADO')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition \${filtroStatus === 'FINALIZADO' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'}">
+            🏆 FINALIZADOS
+          </button>
+        </div>
 
-      <div class="grid gap-4">
-        \${torneios.length === 0 ? \`
-          <div class="card bg-white rounded-xl p-12 text-center text-gray-400">
-            <i class="fas fa-sitemap text-4xl mb-3 text-gray-300"></i>
-            <p class="font-medium text-gray-600">Nenhum torneio cadastrado ainda</p>
-          </div>
-        \` : torneios.map(t => \`
-          <div class="card bg-white rounded-xl p-5 border-l-4 \${t.status === 'EM_ANDAMENTO' ? 'border-blue-500' : t.status === 'INSCRICOES' ? 'border-green-500' : 'border-gray-300'}">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h4 class="font-bold text-gray-800 text-lg">\${t.nome}</h4>
-                  \${statusBadge(t.status)}
-                </div>
-                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-calendar mr-1"></i>\${fmtDateOnly(t.data_inicio)} até \${fmtDateOnly(t.data_fim)}</p>
-                \${t.descricao ? \`<p class="text-sm text-gray-600 mt-2">\${t.descricao}</p>\` : ''}
-              </div>
-              <span class="badge badge-purple text-xs">\${t.total_categorias || 0} Categoria(s)</span>
+        <!-- Lista de Torneios -->
+        <div class="grid gap-4">
+          \${torneios.length === 0 ? \`
+            <div class="card bg-white rounded-xl p-12 text-center text-gray-400">
+              <i class="fas fa-trophy text-5xl mb-3 text-gray-300"></i>
+              <p class="font-semibold text-gray-600">Nenhum torneio encontrado com o filtro selecionado</p>
             </div>
-          </div>
-        \`).join('')}
-      </div>
-    </div>
-  \`)
+          \` : torneios.map(t => \`
+            <div class="card bg-white rounded-xl p-5 border-l-4 \${t.status === 'EM_ANDAMENTO' ? 'border-amber-500' : t.status === 'INSCRICOES' ? 'border-blue-500' : t.status === 'FINALIZADO' ? 'border-emerald-600' : 'border-gray-300'} shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-3">
+                    <h4 class="font-bold text-gray-800 text-lg">\${t.nome}</h4>
+                    \${statusBadge(t.status)}
+                  </div>
+                  <p class="text-xs text-gray-500"><i class="fas fa-calendar-alt mr-1"></i> Período: \${fmtDateOnly(t.data_inicio)} até \${fmtDateOnly(t.data_fim)}</p>
+                  \${t.descricao ? \`<p class="text-xs text-gray-600 mt-1 max-w-2xl">\${t.descricao}</p>\` : ''}
+                </div>
 
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-purple text-xs mr-2"><i class="fas fa-sitemap mr-1"></i>\${t.total_categorias || 0} Categoria(s)</span>
+                  <button onclick="verTorneio('\${t.id}')" class="btn bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-1">
+                    <i class="fas fa-eye"></i> Categorias & Bracket
+                  </button>
+                  \${perfil !== 'JOGADOR' ? \`
+                    <button onclick="editarTorneio('\${t.id}', '\${t.nome}', '\${t.data_inicio}', '\${t.data_fim}', '\${t.descricao || ''}', '\${t.status}')" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2.5 py-2 rounded-lg">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="excluirTorneio('\${t.id}')" class="btn bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-2 rounded-lg">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  \` : ''}
+                </div>
+              </div>
+            </div>
+          \`).join('')}
+        </div>
+      </div>
+    \`)
+  }
+
+  window.filtrarTorneios = (st) => {
+    filtroStatus = st
+    carregarTorneios()
+  }
+
+  // 5.2 Modal Novo Torneio
   window.modalNovoTorneio = () => {
     showModal('Novo Torneio', \`
       \${formGroup('Nome do Torneio', \`<input type="text" id="f-t-nome" class="\${inputClass()}" placeholder="Ex: Torneio de Primavera 2026">\`, true)}
@@ -2183,20 +2234,563 @@ async function renderTorneiosView() {
         \${formGroup('Data Início', \`<input type="date" id="f-t-inicio" class="\${inputClass()}">\`, true)}
         \${formGroup('Data Fim', \`<input type="date" id="f-t-fim" class="\${inputClass()}">\`, true)}
       </div>
-      \${formGroup('Descrição', \`<textarea id="f-t-desc" class="\${inputClass()}" rows="2" placeholder="Regras ou informações do torneio..."></textarea>\`)}
+      \${formGroup('Status Inicial', \`
+        <select id="f-t-status" class="\${selectClass()}">
+          <option value="INSCRICOES">Inscrições Abertas</option>
+          <option value="RASCUNHO">Rascunho</option>
+          <option value="EM_ANDAMENTO">Em Andamento</option>
+        </select>
+      \`)}
+      \${formGroup('Descrição / Regras', \`<textarea id="f-t-desc" class="\${inputClass()}" rows="2" placeholder="Informações adicionais do torneio..."></textarea>\`)}
     \`, async () => {
       try {
         const nome = document.getElementById('f-t-nome').value
         const inicio = document.getElementById('f-t-inicio').value
         const fim = document.getElementById('f-t-fim').value
+        const status = document.getElementById('f-t-status').value
         const desc = document.getElementById('f-t-desc').value
+
         if (!nome || !inicio || !fim) { toast('Preencha os campos obrigatórios', 'warning'); return }
 
-        await api.post('/admin/clube/torneios', { nome, data_inicio: inicio, data_fim: fim, descricao: desc })
-        closeModal(); toast('Torneio criado com sucesso!'); renderTorneiosView()
+        await api.post('/admin/clube/torneios', { nome, data_inicio: inicio, data_fim: fim, status, descricao: desc })
+        closeModal(); toast('Torneio criado com sucesso!'); carregarTorneios()
       } catch(e) { toast(e.response?.data?.error || 'Erro ao criar torneio', 'error') }
     }, 'Criar Torneio')
   }
+
+  // Editar Torneio
+  window.editarTorneio = (id, nome, inicio, fim, desc, status) => {
+    showModal('Editar Torneio', \`
+      \${formGroup('Nome do Torneio', \`<input type="text" id="f-te-nome" class="\${inputClass()}" value="\${nome}">\`, true)}
+      <div class="grid grid-cols-2 gap-3">
+        \${formGroup('Data Início', \`<input type="date" id="f-te-inicio" class="\${inputClass()}" value="\${inicio}">\`, true)}
+        \${formGroup('Data Fim', \`<input type="date" id="f-te-fim" class="\${inputClass()}" value="\${fim}">\`, true)}
+      </div>
+      \${formGroup('Status', \`
+        <select id="f-te-status" class="\${selectClass()}">
+          <option value="INSCRICOES" \${status === 'INSCRICOES' ? 'selected' : ''}>Inscrições Abertas</option>
+          <option value="RASCUNHO" \${status === 'RASCUNHO' ? 'selected' : ''}>Rascunho</option>
+          <option value="EM_ANDAMENTO" \${status === 'EM_ANDAMENTO' ? 'selected' : ''}>Em Andamento</option>
+          <option value="FINALIZADO" \${status === 'FINALIZADO' ? 'selected' : ''}>Finalizado</option>
+          <option value="CANCELADO" \${status === 'CANCELADO' ? 'selected' : ''}>Cancelado</option>
+        </select>
+      \`)}
+      \${formGroup('Descrição', \`<textarea id="f-te-desc" class="\${inputClass()}" rows="2">\${desc}</textarea>\`)}
+    \`, async () => {
+      try {
+        await api.put('/admin/clube/torneios/' + id, {
+          nome: document.getElementById('f-te-nome').value,
+          data_inicio: document.getElementById('f-te-inicio').value,
+          data_fim: document.getElementById('f-te-fim').value,
+          status: document.getElementById('f-te-status').value,
+          descricao: document.getElementById('f-te-desc').value
+        })
+        closeModal(); toast('Torneio atualizado!'); carregarTorneios()
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao atualizar', 'error') }
+    }, 'Salvar Alterações')
+  }
+
+  // Excluir Torneio
+  window.excluirTorneio = (id) => {
+    confirmDelete('Deseja realmente excluir este torneio e todas as suas categorias?', async () => {
+      try {
+        await api.delete('/admin/clube/torneios/' + id)
+        closeModal(); toast('Torneio excluído.', 'info'); carregarTorneios()
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao excluir', 'error') }
+    })
+  }
+
+  // 5.3 a 5.8: Área de Gerenciamento do Torneio (Categorias, Inscrições e Bracket)
+  window.verTorneio = async (torneioId) => {
+    try {
+      const res = await api.get('/admin/clube/torneios/' + torneioId)
+      const t = res.data.data
+      const categorias = t.categorias || []
+
+      let catSelecionadaId = categorias[0]?.id || null
+
+      async function renderPainelTorneio() {
+        let catDetalhes = null
+        let inscritos = []
+        let partidas = []
+
+        if (catSelecionadaId) {
+          const [catRes, inscRes, partRes] = await Promise.all([
+            api.get('/admin/clube/torneios/' + torneioId + '/categorias').catch(() => null),
+            api.get('/admin/clube/torneios/' + torneioId + '/categorias/' + catSelecionadaId + '/inscricoes').catch(() => null),
+            api.get('/admin/clube/torneios/' + torneioId + '/categorias/' + catSelecionadaId + '/partidas').catch(() => null)
+          ])
+
+          const catList = catRes?.data?.data || []
+          catDetalhes = catList.find(c => c.id === catSelecionadaId)
+          inscritos = inscRes?.data?.data || []
+          partidas = partRes?.data?.data || []
+        }
+
+        setContent(\`
+          <div class="space-y-6 max-w-5xl mx-auto">
+            <div class="flex items-center gap-3">
+              <button onclick="renderTorneiosView()" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+                <i class="fas fa-arrow-left"></i> Voltar
+              </button>
+              <div>
+                <h3 class="font-bold text-gray-800 text-xl">\${t.nome}</h3>
+                <p class="text-xs text-gray-500">\${fmtDateOnly(t.data_inicio)} até \${fmtDateOnly(t.data_fim)} · \${statusBadge(t.status)}</p>
+              </div>
+            </div>
+
+            <!-- Abas de Categorias -->
+            <div class="card bg-white rounded-xl p-4 space-y-4">
+              <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h4 class="font-bold text-gray-700 text-sm flex items-center gap-2">
+                  <i class="fas fa-tags text-purple-600"></i> Categorias do Torneio
+                </h4>
+                \${perfil !== 'JOGADOR' ? \`
+                  <button onclick="modalNovaCategoria('\${t.id}')" class="btn bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
+                    <i class="fas fa-plus"></i> Nova Categoria
+                  </button>
+                \` : ''}
+              </div>
+
+              \${categorias.length === 0 ? \`
+                <p class="text-center text-gray-400 text-xs py-4">Nenhuma categoria cadastrada neste torneio ainda</p>
+              \` : \`
+                <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                  \${categorias.map(c => \`
+                    <button onclick="selecionarCategoria('\${c.id}')" class="px-4 py-2 rounded-lg text-xs font-bold border transition flex items-center gap-2 \${catSelecionadaId === c.id ? 'bg-purple-700 text-white border-purple-700 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'}">
+                      <span>\${c.nome}</span>
+                      <span class="badge badge-gray text-[10px]">\${c.total_inscritos || 0}/\${c.max_participantes}</span>
+                    </button>
+                  \`).join('')}
+                </div>
+              \`}
+            </div>
+
+            \${catDetalhes ? \`
+              <!-- Painel da Categoria Selecionada -->
+              <div class="card bg-white rounded-xl p-5 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-bold text-gray-800 text-lg">\${catDetalhes.nome}</h4>
+                      \${statusBadge(catDetalhes.status)}
+                    </div>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      Formato: <strong>\${catDetalhes.formato_jogo}</strong> · Set: <strong>\${catDetalhes.formato_set}</strong> · Máx: <strong>\${catDetalhes.max_participantes} jogadores</strong>
+                    </p>
+                  </div>
+
+                  \${perfil !== 'JOGADOR' ? \`
+                    <div class="flex items-center gap-2">
+                      <!-- Alteração de Status da Categoria -->
+                      <select onchange="mudarStatusCategoria('\${catDetalhes.id}', this.value)" class="\${selectClass()} text-xs py-1.5 w-36">
+                        <option value="RASCUNHO" \${catDetalhes.status === 'RASCUNHO' ? 'selected' : ''}>Status: Rascunho</option>
+                        <option value="INSCRICOES" \${catDetalhes.status === 'INSCRICOES' ? 'selected' : ''}>Inscrições Abertas</option>
+                        <option value="EM_ANDAMENTO" \${catDetalhes.status === 'EM_ANDAMENTO' ? 'selected' : ''}>Em Andamento</option>
+                        <option value="FINALIZADO" \${catDetalhes.status === 'FINALIZADO' ? 'selected' : ''}>Finalizado</option>
+                        <option value="CANCELADO" \${catDetalhes.status === 'CANCELADO' ? 'selected' : ''}>Cancelado</option>
+                      </select>
+
+                      <!-- Ações da Categoria -->
+                      \${['RASCUNHO', 'INSCRICOES'].includes(catDetalhes.status) ? \`
+                        <button onclick="modalEditarCategoria('\${catDetalhes.id}', '\${catDetalhes.nome}', '\${catDetalhes.formato_jogo}', '\${catDetalhes.formato_set}', \${catDetalhes.max_participantes})" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2.5 py-1.5 rounded-lg">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                      \` : ''}
+
+                      \${['RASCUNHO', 'CANCELADO'].includes(catDetalhes.status) ? \`
+                        <button onclick="excluirCategoria('\${catDetalhes.id}')" class="btn bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-1.5 rounded-lg">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      \` : ''}
+                    </div>
+                  \` : ''}
+                </div>
+
+                <!-- 5.4 Gestão de Inscrições & 5.5 Geração de Chave -->
+                <div class="space-y-4">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h5 class="font-bold text-gray-700 text-sm flex items-center gap-2">
+                      <i class="fas fa-users text-blue-600"></i> Jogadores Inscritos (\${inscritos.length}/\${catDetalhes.max_participantes})
+                    </h5>
+
+                    \${perfil !== 'JOGADOR' ? \`
+                      <div class="flex flex-wrap items-center gap-2">
+                        <!-- 5.4 Inscrição em Lote -->
+                        <button onclick="modalInscricaoEmLote('\${catDetalhes.id}')" class="btn bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
+                          <i class="fas fa-user-plus"></i> Inscrição em Lote
+                        </button>
+
+                        <!-- 5.5 Botão Gerar Jogos / Chave -->
+                        \${partidas.length === 0 && ['INSCRICOES', 'EM_ANDAMENTO'].includes(catDetalhes.status) ? \`
+                          <button onclick="gerarChaveTorneio('\${catDetalhes.id}')" class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 shadow-sm">
+                            <i class="fas fa-magic"></i> Gerar Jogos (Bracket)
+                          </button>
+                        \` : ''}
+
+                        <!-- 5.5 Avançar Fase -->
+                        \${partidas.length > 0 && catDetalhes.status === 'EM_ANDAMENTO' ? \`
+                          <button onclick="avancarFaseTorneio('\${catDetalhes.id}')" class="btn bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 shadow-sm">
+                            <i class="fas fa-forward"></i> Avançar Fase
+                          </button>
+                        \` : ''}
+                      </div>
+                    \` : ''}
+                  </div>
+
+                  <!-- Tabela de Inscritos -->
+                  <div class="overflow-x-auto rounded-xl border border-gray-100">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-gray-50 text-gray-600 font-semibold border-b border-gray-100">
+                        <tr>
+                          <th class="p-2.5">Seed</th>
+                          <th class="p-2.5">Jogador</th>
+                          <th class="p-2.5">Classe</th>
+                          <th class="p-2.5">Status</th>
+                          \${perfil !== 'JOGADOR' ? '<th class="p-2.5 text-right">Ações</th>' : ''}
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100">
+                        \${inscritos.length === 0 ? \`
+                          <tr><td colspan="5" class="text-center py-6 text-gray-400">Nenhum jogador inscrito nesta categoria ainda</td></tr>
+                        \` : inscritos.map(i => \`
+                          <tr class="hover:bg-gray-50">
+                            <td class="p-2.5 font-bold text-purple-700">\${i.seed ? 'Seed #' + i.seed : '-'}</td>
+                            <td class="p-2.5 font-semibold text-gray-800">\${i.jogador_nome}</td>
+                            <td class="p-2.5 text-gray-500">\${i.classe_nome || '-'}</td>
+                            <td class="p-2.5"><span class="badge badge-green text-[10px]">\${i.status}</span></td>
+                            \${perfil !== 'JOGADOR' ? \`
+                              <td class="p-2.5 text-right space-x-1">
+                                <button onclick="definirSeedInscrito('\${catDetalhes.id}', '\${i.id}', '\${i.seed || ''}')" class="btn bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] px-2 py-1 rounded">
+                                  Definir Seed
+                                </button>
+                                <button onclick="removerInscricao('\${catDetalhes.id}', '\${i.id}')" class="btn bg-red-50 hover:bg-red-100 text-red-600 text-[10px] px-2 py-1 rounded">
+                                  Remover
+                                </button>
+                              </td>
+                            \` : ''}
+                          </tr>
+                        \`).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- 5.6 Visualização do Bracket / Árvore Eliminatória e PDF -->
+                \${partidas.length > 0 ? \`
+                  <div class="space-y-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center justify-between">
+                      <h5 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <i class="fas fa-sitemap text-emerald-600"></i> Árvore do Bracket Eliminatório
+                      </h5>
+                      <button onclick="exportarBracketPDF()" class="btn bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF / Imprimir
+                      </button>
+                    </div>
+
+                    <!-- Bracket Render -->
+                    <div id="bracket-container" class="p-4 bg-gray-50 rounded-xl overflow-x-auto">
+                      <div class="flex gap-6 min-w-max">
+                        \${renderTreeBracket(partidas)}
+                      </div>
+                    </div>
+                  </div>
+                \` : ''}
+              </div>
+            \` : ''}
+          </div>
+        \`)
+      }
+
+      window.selecionarCategoria = (cId) => {
+        catSelecionadaId = cId
+        renderPainelTorneio()
+      }
+
+      window.mudarStatusCategoria = async (cId, newStatus) => {
+        try {
+          await api.patch('/admin/clube/torneios/' + torneioId + '/categorias/' + cId + '/status', { status: newStatus })
+          toast('Status da categoria atualizado!')
+          verTorneio(torneioId)
+        } catch(e) { toast(e.response?.data?.error || 'Erro ao alterar status', 'error') }
+      }
+
+      window.excluirCategoria = (cId) => {
+        confirmDelete('Deseja excluir esta categoria?', async () => {
+          try {
+            await api.delete('/admin/clube/torneios/' + torneioId + '/categorias/' + cId)
+            closeModal(); toast('Categoria excluída.', 'info'); verTorneio(torneioId)
+          } catch(e) { toast(e.response?.data?.error || 'Erro ao excluir', 'error') }
+        })
+      }
+
+      renderPainelTorneio()
+
+    } catch(e) { toast('Erro ao carregar detalhes do torneio', 'error') }
+  }
+
+  // Helper para renderizar a árvore do Bracket Eliminatório (5.6)
+  function renderTreeBracket(partidas) {
+    const rodadasMap = {}
+    partidas.forEach(p => {
+      if (!rodadasMap[p.rodada]) rodadasMap[p.rodada] = []
+      rodadasMap[p.rodada].push(p)
+    })
+
+    const numRodadas = Object.keys(rodadasMap).length
+    return Object.keys(rodadasMap).map(rod => {
+      const isFinal = Number(rod) === numRodadas
+      const nomeFase = isFinal ? '🏆 Final' : Number(rod) === numRodadas - 1 ? 'Semifinal' : 'Rodada ' + rod
+
+      return \`
+        <div class="flex flex-col space-y-4 w-64">
+          <div class="text-center font-bold text-xs text-purple-800 uppercase tracking-wider bg-purple-50 py-1.5 rounded-lg border border-purple-100">
+            \${nomeFase}
+          </div>
+          <div class="flex flex-col justify-around flex-1 space-y-4">
+            \${rodadasMap[rod].map(p => \`
+              <div class="card bg-white rounded-lg p-3 border \${p.status === 'FINALIZADA' ? 'border-emerald-300 shadow-sm' : 'border-gray-200'} space-y-2">
+                <!-- Jogador A -->
+                <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_a_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
+                  <span class="truncate">\${p.jogador_a_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
+                  <span class="font-mono ml-2">\${p.placar_a || ''}</span>
+                </div>
+
+                <!-- Jogador B -->
+                <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_b_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
+                  <span class="truncate">\${p.jogador_b_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
+                  <span class="font-mono ml-2">\${p.placar_b || ''}</span>
+                </div>
+
+                \${perfil !== 'JOGADOR' && !p.is_bye ? \`
+                  <button onclick="modalPlacarTorneio('\${p.id}', '\${p.jogador_a_nome || 'A'}', '\${p.jogador_b_nome || 'B'}', '\${p.jogador_a_id}', '\${p.jogador_b_id}', '\${p.placar_a || ''}', '\${p.placar_b || ''}', '\${p.vencedor_id || ''}')" class="btn w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] py-1 rounded font-medium text-center">
+                    \${p.status === 'FINALIZADA' ? 'Editar Resultado' : 'Lançar Resultado'}
+                  </button>
+                \` : ''}
+              </div>
+            \`).join('')}
+          </div>
+        </div>
+      \`
+    }).join('')
+  }
+
+  // 5.3 Modal Nova Categoria
+  window.modalNovaCategoria = (torneioId) => {
+    showModal('Nova Categoria de Torneio', \`
+      \${formGroup('Nome da Categoria', \`<input type="text" id="f-cat-nome" class="\${inputClass()}" placeholder="Ex: Categoria A Simples">\`, true)}
+      <div class="grid grid-cols-2 gap-3">
+        \${formGroup('Formato de Jogo', \`
+          <select id="f-cat-formato" class="\${selectClass()}">
+            <option value="ELIMINATORIO">Eliminatório Simples</option>
+            <option value="ROUND_ROBIN">Round Robin (Grupos)</option>
+          </select>
+        \`)}
+        \${formGroup('Formato do Set', \`
+          <select id="f-cat-set" class="\${selectClass()}">
+            <option value="SET_PRO">Set Pro (1 set único)</option>
+            <option value="3SETS">3 Sets (melhor de 3)</option>
+          </select>
+        \`)}
+      </div>
+      \${formGroup('Número Máximo de Participantes', \`<input type="number" id="f-cat-max" class="\${inputClass()}" value="16" min="2" max="64">\`)}
+    \`, async () => {
+      try {
+        const nome = document.getElementById('f-cat-nome').value
+        const formato_jogo = document.getElementById('f-cat-formato').value
+        const formato_set = document.getElementById('f-cat-set').value
+        const max_participantes = document.getElementById('f-cat-max').value
+
+        if (!nome) { toast('Digite o nome da categoria', 'warning'); return }
+
+        await api.post('/admin/clube/torneios/' + torneioId + '/categorias', {
+          nome, formato_jogo, formato_set, max_participantes: Number(max_participantes)
+        })
+        closeModal(); toast('Categoria criada com sucesso!'); verTorneio(torneioId)
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao criar categoria', 'error') }
+    }, 'Criar Categoria')
+  }
+
+  // 5.4 Inscrição em Lote (Modal com busca e checkboxes)
+  window.modalInscricaoEmLote = async (catId) => {
+    try {
+      const res = await api.get('/admin/clube/jogadores')
+      const jogadores = res.data.data || []
+
+      let selecionados = new Set()
+
+      const renderListaJogadoresLote = (jogs) => \`
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+          \${jogs.map(j => \`
+            <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100 text-xs">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" value="\${j.id}" class="chk-jog-lote rounded text-blue-600 focus:ring-blue-500" \${selecionados.has(j.id) ? 'checked' : ''} onchange="toggleJogLote('\${j.id}', this.checked)">
+                <span class="font-semibold text-gray-800">\${j.nome}</span>
+              </div>
+              <span class="text-gray-400">\${j.classe_nome || ''}</span>
+            </label>
+          \`).join('')}
+        </div>
+      \`
+
+      showModal('Inscrição em Lote (Admin)', \`
+        <div class="space-y-3">
+          <input type="text" id="busca-jog-lote" class="\${inputClass()} text-xs" placeholder="🔍 Buscar jogador por nome..." oninput="filtrarJogLote(this.value)">
+
+          <div class="flex items-center justify-between text-xs py-1 border-b border-gray-100">
+            <span class="text-gray-500 font-medium" id="total-sel-lote">0 selecionado(s)</span>
+            <div class="space-x-2">
+              <button onclick="selecionarTodosLote(true)" class="text-blue-600 font-bold hover:underline">Selecionar Todos</button>
+              <span>·</span>
+              <button onclick="selecionarTodosLote(false)" class="text-gray-500 hover:underline">Desmarcar Todos</button>
+            </div>
+          </div>
+
+          <div id="container-jog-lote">
+            \${renderListaJogadoresLote(jogadores)}
+          </div>
+        </div>
+      \`, async () => {
+        if (selecionados.size === 0) { toast('Selecione ao menos um jogador', 'warning'); return }
+        try {
+          await api.post('/admin/clube/torneios/0/categorias/' + catId + '/inscricoes/lote', {
+            jogador_ids: Array.from(selecionados)
+          })
+          closeModal(); toast('Inscrições realizadas em lote!');
+        } catch(e) { toast(e.response?.data?.error || 'Erro na inscrição em lote', 'error') }
+      }, 'Inscrever Selecionados')
+
+      window.toggleJogLote = (id, checked) => {
+        if (checked) selecionados.add(id); else selecionados.delete(id)
+        document.getElementById('total-sel-lote').innerText = selecionados.size + ' selecionado(s)'
+      }
+
+      window.selecionarTodosLote = (mark) => {
+        jogadores.forEach(j => mark ? selecionados.add(j.id) : selecionados.delete(j.id))
+        document.querySelectorAll('.chk-jog-lote').forEach(chk => chk.checked = mark)
+        document.getElementById('total-sel-lote').innerText = selecionados.size + ' selecionado(s)'
+      }
+
+      window.filtrarJogLote = (termo) => {
+        const filtrados = jogadores.filter(j => j.nome.toLowerCase().includes(termo.toLowerCase()))
+        document.getElementById('container-jog-lote').innerHTML = renderListaJogadoresLote(filtrados)
+      }
+
+    } catch(e) { toast('Erro ao buscar lista de jogadores', 'error') }
+  }
+
+  // Definir Seed do Inscrito
+  window.definirSeedInscrito = (catId, inscricaoId, seedAtual) => {
+    showModal('Definir Seed / Cabeça de Chave', \`
+      \${formGroup('Número do Seed', \`<input type="number" id="f-seed-num" class="\${inputClass()}" value="\${seedAtual}" placeholder="Ex: 1, 2, 3...">\`)}
+    \`, async () => {
+      try {
+        const seed = document.getElementById('f-seed-num').value
+        await api.patch('/admin/clube/torneios/0/categorias/' + catId + '/inscricoes/' + inscricaoId + '/seed', { seed })
+        closeModal(); toast('Seed atribuído!');
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao definir seed', 'error') }
+    }, 'Salvar Seed')
+  }
+
+  // Remover Inscrição
+  window.removerInscricao = (catId, inscricaoId) => {
+    confirmDelete('Deseja remover esta inscrição?', async () => {
+      try {
+        await api.delete('/admin/clube/torneios/0/categorias/' + catId + '/inscricoes/' + inscricaoId)
+        closeModal(); toast('Inscrição removida.', 'info');
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao remover', 'error') }
+    })
+  }
+
+  // 5.5 Gerar Chave / Bracket
+  window.gerarChaveTorneio = async (catId) => {
+    try {
+      await api.post('/admin/clube/torneios/0/categorias/' + catId + '/gerar-chave')
+      toast('Chave eliminatória e confrontos gerados com sucesso!');
+    } catch(e) { toast(e.response?.data?.error || 'Erro ao gerar chave', 'error') }
+  }
+
+  // 5.5 Avançar Fase
+  window.avancarFaseTorneio = async (catId) => {
+    try {
+      const res = await api.post('/admin/clube/torneios/0/categorias/' + catId + '/avancar-fase')
+      toast(res.data?.message || 'Próxima fase gerada com sucesso!');
+    } catch(e) { toast(e.response?.data?.error || 'Erro ao avançar fase', 'error') }
+  }
+
+  // 5.8 Registrar Resultado de Partida de Torneio (Set Pro & 3 Sets)
+  window.modalPlacarTorneio = (partidaId, jogA, jogB, idA, idB, placarA, placarB, vencedorId) => {
+    showModal('Registrar Resultado (Torneio)', \`
+      <div class="space-y-4 text-xs">
+        <p class="font-bold text-gray-700 text-sm border-b border-gray-100 pb-2">\${jogA} <span class="text-gray-400">VS</span> \${jogB}</p>
+
+        <!-- Placar Simples (Set Pro / 3 Sets) -->
+        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg">
+          <div>
+            <label class="font-semibold text-gray-700 block mb-1">\${jogA}</label>
+            <input type="text" id="placar-t-a" class="\${inputClass()} font-mono text-center font-bold text-base" value="\${placarA}" placeholder="Score ex: 6 ou 6-4 6-3">
+          </div>
+          <div>
+            <label class="font-semibold text-gray-700 block mb-1">\${jogB}</label>
+            <input type="text" id="placar-t-b" class="\${inputClass()} font-mono text-center font-bold text-base" value="\${placarB}" placeholder="Score ex: 4 ou 4-6 3-6">
+          </div>
+        </div>
+
+        <!-- Seleção de Vencedor (Obrigatória) -->
+        \${formGroup('Vencedor da Partida *', \`
+          <select id="vencedor-t-id" class="\${selectClass()} font-bold text-emerald-800">
+            <option value="">Selecione o vencedor...</option>
+            \${idA ? \`<option value="\${idA}" \${vencedorId === idA ? 'selected' : ''}>\${jogA}</option>\` : ''}
+            \${idB ? \`<option value="\${idB}" \${vencedorId === idB ? 'selected' : ''}>\${jogB}</option>\` : ''}
+          </select>
+        \`, true)}
+
+        <!-- Observações Opcionais -->
+        \${formGroup('Observações (Opcional - WO, lesão, desistência)', \`
+          <input type="text" id="obs-t" class="\${inputClass()}" placeholder="Ex: WO do Jogador B">
+        \`)}
+      </div>
+    \`, async () => {
+      const placar_a = document.getElementById('placar-t-a').value
+      const placar_b = document.getElementById('placar-t-b').value
+      const vencedor_id = document.getElementById('vencedor-t-id').value
+      const obs = document.getElementById('obs-t').value
+
+      if (!vencedor_id) { toast('Selecione o vencedor da partida', 'warning'); return }
+
+      try {
+        await api.patch('/admin/clube/torneios/0/partidas/' + partidaId + '/resultado', {
+          placar_a, placar_b, vencedor_id, status: 'FINALIZADA', observacoes: obs
+        })
+        closeModal(); toast('Resultado registrado com sucesso!');
+      } catch(e) { toast(e.response?.data?.error || 'Erro ao registrar resultado', 'error') }
+    }, 'Salvar Resultado')
+  }
+
+  // 5.6 Exportar PDF / Imprimir Bracket
+  window.exportarBracketPDF = () => {
+    const content = document.getElementById('bracket-container')?.innerHTML
+    if (!content) return
+
+    const win = window.open('', '_blank')
+    win.document.write(\`
+      <html>
+        <head>
+          <title>Bracket do Torneio - TopCourtRank</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+          <style>body { font-family: sans-serif; padding: 20px; }</style>
+        </head>
+        <body onload="window.print()">
+          <h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">Chave Eliminatoria de Torneio</h2>
+          <div class="flex gap-6">\${content}</div>
+        </body>
+      </html>
+    \`)
+    win.document.close()
+  }
+
+  carregarTorneios()
 }
 
 // ============================================================
