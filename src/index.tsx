@@ -2531,8 +2531,10 @@ async function renderTorneiosView() {
 
   // Helper para renderizar a árvore do Bracket Eliminatório (5.6)
   function renderTreeBracket(partidas) {
+    if (!window._torneioPartidasMap) window._torneioPartidasMap = {}
     const rodadasMap = {}
     partidas.forEach(p => {
+      window._torneioPartidasMap[p.id] = p
       if (!rodadasMap[p.rodada]) rodadasMap[p.rodada] = []
       rodadasMap[p.rodada].push(p)
     })
@@ -2563,7 +2565,7 @@ async function renderTorneiosView() {
                 </div>
 
                 \${perfil !== 'JOGADOR' && !p.is_bye ? \`
-                  <button onclick="modalPlacarTorneio('\${p.id}', '\${p.jogador_a_nome || 'A'}', '\${p.jogador_b_nome || 'B'}', '\${p.jogador_a_id}', '\${p.jogador_b_id}', '\${p.placar_a || ''}', '\${p.placar_b || ''}', '\${p.vencedor_id || ''}')" class="btn w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] py-1 rounded font-medium text-center">
+                  <button onclick="modalPlacarTorneioId('\${p.id}')" class="btn w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] py-1 rounded font-medium text-center">
                     \${p.status === 'FINALIZADA' ? 'Editar Resultado' : 'Lançar Resultado'}
                   </button>
                 \` : ''}
@@ -2719,6 +2721,12 @@ async function renderTorneiosView() {
   }
 
   // 5.8 Registrar Resultado de Partida de Torneio (Set Pro & 3 Sets)
+  window.modalPlacarTorneioId = (partidaId) => {
+    const p = window._torneioPartidasMap ? window._torneioPartidasMap[partidaId] : null
+    if (!p) return
+    window.modalPlacarTorneio(p.id, p.jogador_a_nome || 'Jogador A', p.jogador_b_nome || 'Jogador B', p.jogador_a_id, p.jogador_b_id, p.placar_a || '', p.placar_b || '', p.vencedor_id || '')
+  }
+
   window.modalPlacarTorneio = (partidaId, jogA, jogB, idA, idB, placarA, placarB, vencedorId) => {
     showModal('Registrar Resultado (Torneio)', \`
       <div class="space-y-4 text-xs">
@@ -3398,10 +3406,10 @@ async function renderConfiguracoes() {
       <div class="card bg-white rounded-xl p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-random text-purple-500"></i>Sorteios</h3>
         <div class="grid sm:grid-cols-2 gap-4">
-          \${formGroup('Periodicidade de Sorteio (dias)', \`<input type="number" id="f-period" class="\${inputClass()}" value="\${c.periodicidade_sorteio || 7}" min="1">\`)}
-          \${formGroup('Limite de Jogos em Aberto por Jogador', \`<input type="number" id="f-limite" class="\${inputClass()}" value="\${c.limite_jogos_aberto_por_jogador || 3}" min="1">\`)}
-          \${formGroup('Dias para W.O. Automático', \`<input type="number" id="f-wo-dias" class="\${inputClass()}" value="\${c.dias_para_wo || 14}" min="1">\`)}
-          \${formGroup('Limite de Quadras para Ranking', \`<input type="number" id="f-quadras" class="\${inputClass()}" value="\${c.limite_quadras || 4}" min="1" title="Impede marcação se jogos abertos > quadras disponíveis">\`)}
+          \${formGroup('Periodicidade de Sorteio (dias)', '<input type="number" id="f-period" class="' + inputClass() + '" value="' + (c.periodicidade_sorteio || 7) + '" min="1">')}
+          \${formGroup('Limite de Jogos em Aberto por Jogador', '<input type="number" id="f-limite" class="' + inputClass() + '" value="' + (c.limite_jogos_aberto_por_jogador || 3) + '" min="1">')}
+          \${formGroup('Dias para W.O. Automático', '<input type="number" id="f-wo-dias" class="' + inputClass() + '" value="' + (c.dias_para_wo || 14) + '" min="1">')}
+          \${formGroup('Limite de Quadras para Ranking', '<input type="number" id="f-quadras" class="' + inputClass() + '" value="' + (c.limite_quadras || 4) + '" min="1" title="Impede marcação se jogos abertos > quadras disponíveis">')}
         </div>
       </div>
 
@@ -3409,18 +3417,8 @@ async function renderConfiguracoes() {
       <div class="card bg-white rounded-xl p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-table-tennis text-blue-500"></i>Formato de Jogo</h3>
         <div class="grid sm:grid-cols-2 gap-4">
-          \${formGroup('Formato de Set', \`
-            <select id="f-formato-set" class="\${selectClass()}">
-              <option value="3SETS" \${c.formato_set === '3SETS' ? 'selected' : ''}>3 Sets (3º Tie-Break)</option>
-              <option value="SET_PRO" \${c.formato_set === 'SET_PRO' ? 'selected' : ''}>Set Pro com Vantagem</option>
-            </select>
-          \`)}
-          \${formGroup('Módulo de Desafios', \`
-            <select id="f-desafio" class="\${selectClass()}">
-              <option value="0" \${!c.desafio_ativo ? 'selected' : ''}>Desativado</option>
-              <option value="1" \${c.desafio_ativo ? 'selected' : ''}>Ativado</option>
-            </select>
-          \`)}
+          \${formGroup('Formato de Set', '<select id="f-formato-set" class="' + selectClass() + '"><option value="3SETS" ' + (c.formato_set === '3SETS' ? 'selected' : '') + '>3 Sets (3º Tie-Break)</option><option value="SET_PRO" ' + (c.formato_set === 'SET_PRO' ? 'selected' : '') + '>Set Pro com Vantagem</option></select>')}
+          \${formGroup('Módulo de Desafios', '<select id="f-desafio" class="' + selectClass() + '"><option value="0" ' + (!c.desafio_ativo ? 'selected' : '') + '>Desativado</option><option value="1" ' + (c.desafio_ativo ? 'selected' : '') + '>Ativado</option></select>')}
         </div>
       </div>
 
@@ -3428,9 +3426,9 @@ async function renderConfiguracoes() {
       <div class="card bg-white rounded-xl p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-star text-yellow-500"></i>Pontuação</h3>
         <div class="grid grid-cols-3 gap-4">
-          \${formGroup('Pontos por Vitória', \`<input type="number" id="f-pts-v" class="\${inputClass()}" value="\${c.pontos_vitoria || 3}" min="0">\`)}
-          \${formGroup('Pontos por Derrota', \`<input type="number" id="f-pts-d" class="\${inputClass()}" value="\${c.pontos_derrota || 1}" min="0">\`)}
-          \${formGroup('Pontos por W.O. (ganho)', \`<input type="number" id="f-pts-wo" class="\${inputClass()}" value="\${c.pontos_wo || 0}" min="0">\`)}
+          \${formGroup('Pontos por Vitória', '<input type="number" id="f-pts-v" class="' + inputClass() + '" value="' + (c.pontos_vitoria || 3) + '" min="0">')}
+          \${formGroup('Pontos por Derrota', '<input type="number" id="f-pts-d" class="' + inputClass() + '" value="' + (c.pontos_derrota || 1) + '" min="0">')}
+          \${formGroup('Pontos por W.O. (ganho)', '<input type="number" id="f-pts-wo" class="' + inputClass() + '" value="' + (c.pontos_wo || 0) + '" min="0">')}
         </div>
       </div>
 
@@ -3438,11 +3436,11 @@ async function renderConfiguracoes() {
       <div class="card bg-white rounded-xl p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-money-bill-wave text-green-500"></i>Pagamentos & Inadimplência</h3>
         <div class="grid sm:grid-cols-2 gap-4">
-          \${formGroup('Valor da Mensalidade (R$)', \`<input type="number" id="f-mensalidade" class="\${inputClass()}" value="\${c.valor_mensalidade || 0}" step="0.01" min="0">\`)}
-          \${formGroup('Chave PIX', \`<input type="text" id="f-pix-chave" class="\${inputClass()}" value="\${c.pix_chave || ''}" placeholder="CPF, email, telefone ou chave aleatória">\`)}
-          \${formGroup('Titular PIX', \`<input type="text" id="f-pix-titular" class="\${inputClass()}" value="\${c.pix_titular || ''}" placeholder="Nome do titular">\`)}
-          \${formGroup('Dias para Bloqueio Ranking (inadimplência)', \`<input type="number" id="f-inad-bloq" class="\${inputClass()}" value="\${c.dias_inadimplencia_bloqueio || 10}" min="1">\`)}
-          \${formGroup('Dias para Inativação da Conta (inadimplência)', \`<input type="number" id="f-inad-inat" class="\${inputClass()}" value="\${c.dias_inadimplencia_inativacao || 20}" min="1">\`)}
+          \${formGroup('Valor da Mensalidade (R$)', '<input type="number" id="f-mensalidade" class="' + inputClass() + '" value="' + (c.valor_mensalidade || 0) + '" step="0.01" min="0">')}
+          \${formGroup('Chave PIX', '<input type="text" id="f-pix-chave" class="' + inputClass() + '" value="' + (c.pix_chave || '') + '" placeholder="CPF, email, telefone ou chave aleatória">')}
+          \${formGroup('Titular PIX', '<input type="text" id="f-pix-titular" class="' + inputClass() + '" value="' + (c.pix_titular || '') + '" placeholder="Nome do titular">')}
+          \${formGroup('Dias para Bloqueio Ranking (inadimplência)', '<input type="number" id="f-inad-bloq" class="' + inputClass() + '" value="' + (c.dias_inadimplencia_bloqueio || 10) + '" min="1">')}
+          \${formGroup('Dias para Inativação da Conta (inadimplência)', '<input type="number" id="f-inad-inat" class="' + inputClass() + '" value="' + (c.dias_inadimplencia_inativacao || 20) + '" min="1">')}
         </div>
       </div>
 
@@ -3450,20 +3448,10 @@ async function renderConfiguracoes() {
       <div class="card bg-white rounded-xl p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2"><i class="fas fa-bell text-orange-500"></i>Notificações & Redes Sociais</h3>
         <div class="grid sm:grid-cols-2 gap-4">
-          \${formGroup('Notificações WhatsApp', \`
-            <select id="f-whatsapp" class="\${selectClass()}">
-              <option value="0" \${!c.whatsapp_notificacoes ? 'selected' : ''}>Desativado</option>
-              <option value="1" \${c.whatsapp_notificacoes ? 'selected' : ''}>Ativado</option>
-            </select>
-          \`)}
-          \${formGroup('Notificações por Email', \`
-            <select id="f-email-notif" class="\${selectClass()}">
-              <option value="0" \${!c.email_notificacoes ? 'selected' : ''}>Desativado</option>
-              <option value="1" \${c.email_notificacoes ? 'selected' : ''}>Ativado</option>
-            </select>
-          \`)}
-          \${formGroup('Instagram URL do Clube', \`<input type="url" id="f-instagram" class="\${inputClass()}" value="\${c.instagram_url || ''}" placeholder="https://instagram.com/seucube">\`)}
-          \${formGroup('Facebook URL do Clube', \`<input type="url" id="f-facebook" class="\${inputClass()}" value="\${c.facebook_url || ''}" placeholder="https://facebook.com/seucube">\`)}
+          \${formGroup('Notificações WhatsApp', '<select id="f-whatsapp" class="' + selectClass() + '"><option value="0" ' + (!c.whatsapp_notificacoes ? 'selected' : '') + '>Desativado</option><option value="1" ' + (c.whatsapp_notificacoes ? 'selected' : '') + '>Ativado</option></select>')}
+          \${formGroup('Notificações por Email', '<select id="f-email-notif" class="' + selectClass() + '"><option value="0" ' + (!c.email_notificacoes ? 'selected' : '') + '>Desativado</option><option value="1" ' + (c.email_notificacoes ? 'selected' : '') + '>Ativado</option></select>')}
+          \${formGroup('Instagram URL do Clube', '<input type="url" id="f-instagram" class="' + inputClass() + '" value="' + (c.instagram_url || '') + '" placeholder="https://instagram.com/seucube">')}
+          \${formGroup('Facebook URL do Clube', '<input type="url" id="f-facebook" class="' + inputClass() + '" value="' + (c.facebook_url || '') + '" placeholder="https://facebook.com/seucube">')}
         </div>
       </div>
 
