@@ -2773,21 +2773,10 @@ async function renderTorneiosView() {
     if (!content) return
 
     const win = window.open('', '_blank')
-    win.document.write(\`
-      <html>
-        <head>
-          <title>Bracket do Torneio - TopCourtRank</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-          <style>body { font-family: sans-serif; padding: 20px; }</style>
-        </head>
-        <body onload="window.print()">
-          <h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">Chave Eliminatoria de Torneio</h2>
-          <div class="flex gap-6">\${content}</div>
-        </body>
-      </html>
-    \`)
+    if (!win) return
+    win.document.write('<html><head><title>Bracket do Torneio - TopCourtRank</title><script src="https://cdn.tailwindcss.com"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"><style>body { font-family: sans-serif; padding: 20px; }</style></head><body><h2 style="font-size:20px; font-weight:bold; margin-bottom:15px;">Chave Eliminatória de Torneio</h2><div class="flex gap-6">' + content + '</div></body></html>')
     win.document.close()
+    setTimeout(() => { win.print() }, 500)
   }
 
   carregarTorneios()
