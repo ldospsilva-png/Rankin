@@ -2529,52 +2529,111 @@ async function renderTorneiosView() {
     } catch(e) { toast('Erro ao carregar detalhes do torneio', 'error') }
   }
 
-  // Helper para renderizar a árvore do Bracket Eliminatório (5.6)
+  // Helper para renderizar a árvore do Bracket Eliminatório estilo ATP (5.6)
   function renderTreeBracket(partidas) {
     if (!window._torneioPartidasMap) window._torneioPartidasMap = {}
+    
     const rodadasMap = {}
+    let maxRodadaNoBanco = 1
+    let r1Count = 0
+
     partidas.forEach(p => {
       window._torneioPartidasMap[p.id] = p
-      if (!rodadasMap[p.rodada]) rodadasMap[p.rodada] = []
-      rodadasMap[p.rodada].push(p)
+      const r = Number(p.rodada) || 1
+      if (r > maxRodadaNoBanco) maxRodadaNoBanco = r
+      if (!rodadasMap[r]) rodadasMap[r] = {}
+      
+      const pos = Number(p.posicao_chave) || (Object.keys(rodadasMap[r]).length + 1)
+      rodadasMap[r][pos] = p
+      if (r === 1) r1Count++
     })
 
-    const numRodadas = Object.keys(rodadasMap).length
-    return Object.keys(rodadasMap).map(rod => {
-      const isFinal = Number(rod) === numRodadas
-      const nomeFase = isFinal ? '🏆 Final' : Number(rod) === numRodadas - 1 ? 'Semifinal' : 'Rodada ' + rod
+    // Calcular tamanho da chave (S) e total de rodadas (R) estilo ATP
+    let S = r1Count > 0 ? r1Count * 2 : 8
+    let power = Math.ceil(Math.log2(Math.max(S, 2)))
+    S = Math.pow(2, power)
+    const R = Math.max(power, maxRodadaNoBanco)
 
-      return \`
-        <div class="flex flex-col space-y-4 w-64">
-          <div class="text-center font-bold text-xs text-purple-800 uppercase tracking-wider bg-purple-50 py-1.5 rounded-lg border border-purple-100">
+    const cols = []
+
+    for (let r = 1; r <= R; r++) {
+      const distFromFinal = R - r
+      let nomeFase = 'Rodada ' + r
+      if (distFromFinal === 0) nomeFase = '🏆 Final'
+      else if (distFromFinal === 1) nomeFase = 'Semifinal'
+      else if (distFromFinal === 2) nomeFase = 'Quartas de Final'
+      else if (distFromFinal === 3) nomeFase = 'Oitavas de Final'
+
+      const matchCountInRound = Math.pow(2, R - r)
+      const cardsHtml = []
+
+      for (let k = 1; k <= matchCountInRound; k++) {
+        const p = rodadasMap[r] ? rodadasMap[r][k] : null
+
+        if (p) {
+          // Partida existente no banco
+          cardsHtml.push(\`
+            <div class="card bg-white rounded-lg p-3 border \${p.status === 'FINALIZADA' ? 'border-emerald-300 shadow-sm bg-emerald-50/20' : 'border-gray-200'} space-y-2">
+              <div class="flex items-center justify-between text-[10px] font-semibold text-gray-400 border-b border-gray-100 pb-1">
+                <span>Jogo #\${k}</span>
+                \${statusBadge(p.status)}
+              </div>
+              <!-- Jogador A -->
+              <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_a_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
+                <span class="truncate">\${p.jogador_a_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
+                <span class="font-mono ml-2">\${p.placar_a || ''}</span>
+              </div>
+
+              <!-- Jogador B -->
+              <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_b_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
+                <span class="truncate">\${p.jogador_b_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
+                <span class="font-mono ml-2">\${p.placar_b || ''}</span>
+              </div>
+
+              \${perfil !== 'JOGADOR' && !p.is_bye ? \`
+                <button onclick="modalPlacarTorneioId('\${p.id}')" class="btn w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] py-1 rounded font-medium text-center">
+                  \${p.status === 'FINALIZADA' ? 'Editar Resultado' : 'Lançar Resultado'}
+                </button>
+              \` : ''}
+            </div>
+          \`)
+        } else {
+          // Partida futura na chave ATP (Placeholder)
+          let labelA = r === 1 ? 'A definir' : \`Vencedor J\${2 * k - 1}\`
+          let labelB = r === 1 ? 'A definir' : \`Vencedor J\${2 * k}\`
+
+          cardsHtml.push(\`
+            <div class="card bg-gray-50/60 border border-dashed border-gray-300 rounded-lg p-3 space-y-2 opacity-75">
+              <div class="flex items-center justify-between text-[10px] font-semibold text-gray-400 border-b border-gray-200/60 pb-1">
+                <span>Jogo #\${k}</span>
+                <span class="badge badge-gray text-[9px]">Aguardando</span>
+              </div>
+              <div class="flex items-center justify-between text-xs p-1.5 bg-gray-100/70 rounded text-gray-400 italic">
+                <span class="truncate">\${labelA}</span>
+                <span class="font-mono ml-2">-</span>
+              </div>
+              <div class="flex items-center justify-between text-xs p-1.5 bg-gray-100/70 rounded text-gray-400 italic">
+                <span class="truncate">\${labelB}</span>
+                <span class="font-mono ml-2">-</span>
+              </div>
+            </div>
+          \`)
+        }
+      }
+
+      cols.push(\`
+        <div class="flex flex-col space-y-4 w-64 min-w-[16rem]">
+          <div class="text-center font-bold text-xs text-purple-800 uppercase tracking-wider bg-purple-50 py-2 rounded-lg border border-purple-100 shadow-sm">
             \${nomeFase}
           </div>
-          <div class="flex flex-col justify-around flex-1 space-y-4">
-            \${rodadasMap[rod].map(p => \`
-              <div class="card bg-white rounded-lg p-3 border \${p.status === 'FINALIZADA' ? 'border-emerald-300 shadow-sm' : 'border-gray-200'} space-y-2">
-                <!-- Jogador A -->
-                <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_a_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
-                  <span class="truncate">\${p.jogador_a_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
-                  <span class="font-mono ml-2">\${p.placar_a || ''}</span>
-                </div>
-
-                <!-- Jogador B -->
-                <div class="flex items-center justify-between text-xs p-1.5 rounded \${p.vencedor_id === p.jogador_b_id && p.status === 'FINALIZADA' ? 'bg-emerald-100 font-bold text-emerald-900' : 'bg-gray-50'}">
-                  <span class="truncate">\${p.jogador_b_nome || (p.is_bye ? 'BYE (Avança)' : 'A definir')}</span>
-                  <span class="font-mono ml-2">\${p.placar_b || ''}</span>
-                </div>
-
-                \${perfil !== 'JOGADOR' && !p.is_bye ? \`
-                  <button onclick="modalPlacarTorneioId('\${p.id}')" class="btn w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] py-1 rounded font-medium text-center">
-                    \${p.status === 'FINALIZADA' ? 'Editar Resultado' : 'Lançar Resultado'}
-                  </button>
-                \` : ''}
-              </div>
-            \`).join('')}
+          <div class="flex flex-col justify-around flex-1 space-y-4 py-2">
+            \${cardsHtml.join('')}
           </div>
         </div>
-      \`
-    }).join('')
+      \`)
+    }
+
+    return cols.join('')
   }
 
   // 5.3 Modal Nova Categoria
