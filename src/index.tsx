@@ -313,21 +313,101 @@ function getHTML(): string {
     }
   </script>
   <style>
-    :root {
-      --primary: #16a34a;
-      --primary-dark: #15803d;
+    :root, [data-theme="us-open"] {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
       --secondary: #0ea5e9;
+      --accent: #ccff00;
+      --danger: #dc2626;
+      --sidebar-from: #0a192f;
+      --sidebar-to: #0d213f;
+      --sidebar-border: #1e293b;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --header-bg: #ffffff;
+      --shadow-color: rgba(0,0,0,0.06);
+    }
+
+    [data-theme="wimbledon"] {
+      --primary: #0f382c;
+      --primary-dark: #08261a;
+      --secondary: #164e38;
+      --accent: #d4af37;
+      --danger: #dc2626;
+      --sidebar-from: #0f382c;
+      --sidebar-to: #08261a;
+      --sidebar-border: #164e38;
+      --bg-body: #f4f7f5;
+      --bg-card: #ffffff;
+      --text-main: #1c2826;
+      --text-muted: #5c6f68;
+      --border-color: #e0ebe4;
+      --header-bg: #ffffff;
+      --shadow-color: rgba(15,56,44,0.08);
+    }
+
+    [data-theme="roland-garros"] {
+      --primary: #c85a32;
+      --primary-dark: #a74321;
+      --secondary: #ea580c;
       --accent: #f59e0b;
       --danger: #dc2626;
-      --gray-bg: #f0fdf4;
+      --sidebar-from: #c85a32;
+      --sidebar-to: #94371b;
+      --sidebar-border: #b04925;
+      --bg-body: #faf8f5;
+      --bg-card: #ffffff;
+      --text-main: #2d2421;
+      --text-muted: #786c68;
+      --border-color: #efe7e1;
+      --header-bg: #ffffff;
+      --shadow-color: rgba(200,90,50,0.08);
     }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; }
-    .sidebar { transition: all 0.3s ease; }
+
+    [data-theme="dark-glass"] {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --secondary: #06b6d4;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --sidebar-from: #0d1322;
+      --sidebar-to: #080c17;
+      --sidebar-border: rgba(255,255,255,0.1);
+      --bg-body: #090d16;
+      --bg-card: rgba(30, 41, 59, 0.75);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255,255,255,0.1);
+      --header-bg: #0d1322;
+      --shadow-color: rgba(0,0,0,0.4);
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-body); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
+    .sidebar { background: linear-gradient(180deg, var(--sidebar-from), var(--sidebar-to)) !important; border-right: 1px solid var(--sidebar-border); transition: all 0.3s ease; }
+    .card { background-color: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 1px 3px var(--shadow-color); transition: all 0.2s; backdrop-filter: blur(12px); }
+    .card:hover { box-shadow: 0 4px 12px var(--shadow-color); }
+    header { background-color: var(--header-bg) !important; border-bottom: 1px solid var(--border-color); color: var(--text-main) !important; }
+    header h2, header span { color: var(--text-main) !important; }
+    main { background-color: var(--bg-body) !important; }
+    
+    /* Suporte a Dark Mode para formulários e cards */
+    [data-theme="dark-glass"] .card h3, 
+    [data-theme="dark-glass"] .card h2, 
+    [data-theme="dark-glass"] .card h1, 
+    [data-theme="dark-glass"] .card p,
+    [data-theme="dark-glass"] .card td,
+    [data-theme="dark-glass"] .card th { color: var(--text-main) !important; }
+    
+    [data-theme="dark-glass"] input, 
+    [data-theme="dark-glass"] select, 
+    [data-theme="dark-glass"] textarea { background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; }
+
     .nav-item { transition: all 0.2s ease; }
     .nav-item:hover { background: rgba(255,255,255,0.15); }
-    .nav-item.active { background: rgba(255,255,255,0.25); border-left: 3px solid white; }
-    .card { box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: box-shadow 0.2s; }
-    .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .nav-item.active { background: rgba(255,255,255,0.25); border-left: 3px solid var(--accent); }
     .btn { transition: all 0.15s ease; cursor: pointer; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .fade-in { animation: fadeIn 0.3s ease; }
@@ -340,14 +420,14 @@ function getHTML(): string {
     .badge-yellow { background: #fef9c3; color: #713f12; }
     .badge-blue { background: #dbeafe; color: #1e40af; }
     .badge-gray { background: #f1f5f9; color: #475569; }
-    .table-row:hover { background: #f8fafc; }
-    .modal-bg { background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
+    .table-row:hover { background: rgba(0,0,0,0.02); }
+    .modal-bg { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
     input, select, textarea { outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-    input:focus, select:focus, textarea:focus { border-color: #16a34a !important; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(2,132,199,0.15); }
     .toast { animation: slideIn 0.3s ease; }
     @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     ::-webkit-scrollbar { width: 6px; } 
-    ::-webkit-scrollbar-track { background: #f1f1f1; } 
+    ::-webkit-scrollbar-track { background: transparent; } 
     ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
     .rank-1 { color: #f59e0b; } .rank-2 { color: #94a3b8; } .rank-3 { color: #92400e; }
     @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; } .sidebar.open { transform: translateX(0); } }
@@ -458,6 +538,35 @@ function getHTML(): string {
         </div>
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-500 hidden sm:block" id="header-clube"></span>
+          
+          <!-- Seletor de Temas CSS -->
+          <div class="relative inline-block text-left">
+            <button onclick="toggleThemeMenu()" class="btn p-2 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center gap-1.5" title="Alterar Tema Visual">
+              <i class="fas fa-palette text-lg text-purple-600"></i>
+              <span class="text-xs font-semibold hidden md:inline" id="current-theme-name">Tema</span>
+              <i class="fas fa-chevron-down text-[10px] text-gray-400"></i>
+            </button>
+            <div id="theme-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-50 p-2 fade-in">
+              <div class="text-[11px] font-bold text-gray-400 px-3 py-1 uppercase tracking-wider">Modelos de Tema</div>
+              <button onclick="setAppTheme('us-open')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-blue-50 flex items-center justify-between font-medium text-gray-700">
+                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> ⚡ US Open (Hard Court)</span>
+                <i class="fas fa-check text-blue-600 hidden theme-check-us-open"></i>
+              </button>
+              <button onclick="setAppTheme('wimbledon')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-emerald-50 flex items-center justify-between font-medium text-gray-700">
+                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-800 inline-block"></span> 🏆 Wimbledon (Classic)</span>
+                <i class="fas fa-check text-emerald-600 hidden theme-check-wimbledon"></i>
+              </button>
+              <button onclick="setAppTheme('roland-garros')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-orange-50 flex items-center justify-between font-medium text-gray-700">
+                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-600 inline-block"></span> 🎾 Roland Garros (Saibro)</span>
+                <i class="fas fa-check text-orange-600 hidden theme-check-roland-garros"></i>
+              </button>
+              <button onclick="setAppTheme('dark-glass')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-800 hover:text-white flex items-center justify-between font-medium text-gray-700">
+                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-900 border border-emerald-400 inline-block"></span> 🌙 Dark Mode (Glass)</span>
+                <i class="fas fa-check text-emerald-400 hidden theme-check-dark-glass"></i>
+              </button>
+            </div>
+          </div>
+
           <button onclick="refreshPage()" class="btn p-2 rounded-lg hover:bg-gray-100 text-gray-500" title="Atualizar">
             <i class="fas fa-sync-alt"></i>
           </button>
@@ -478,6 +587,45 @@ function getHTML(): string {
 <div id="modal-container"></div>
 
 <script>
+// ============================================================
+// GERENCIAMENTO DE TEMAS CSS
+// ============================================================
+function setAppTheme(themeName) {
+  if (!themeName) themeName = 'us-open';
+  document.documentElement.setAttribute('data-theme', themeName);
+  localStorage.setItem('tenisrank_theme', themeName);
+  
+  const dd = document.getElementById('theme-dropdown');
+  if (dd) dd.classList.add('hidden');
+
+  document.querySelectorAll('[class*="theme-check-"]').forEach(el => el.classList.add('hidden'));
+  const check = document.querySelector('.theme-check-' + themeName);
+  if (check) check.classList.remove('hidden');
+
+  const names = {
+    'us-open': '⚡ US Open',
+    'wimbledon': '🏆 Wimbledon',
+    'roland-garros': '🎾 Saibro',
+    'dark-glass': '🌙 Dark Mode'
+  };
+  const label = document.getElementById('current-theme-name');
+  if (label) label.textContent = names[themeName] || 'Tema';
+}
+
+function toggleThemeMenu() {
+  const dd = document.getElementById('theme-dropdown');
+  if (dd) dd.classList.toggle('hidden');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.relative') && !e.target.closest('#theme-dropdown')) {
+    document.getElementById('theme-dropdown')?.classList.add('hidden');
+  }
+});
+
+// Inicializar Tema salvo
+setAppTheme(localStorage.getItem('tenisrank_theme') || 'us-open');
+
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
